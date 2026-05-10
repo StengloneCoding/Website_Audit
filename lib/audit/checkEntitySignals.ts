@@ -1,137 +1,275 @@
-import type { AuditCheck, ParsedHtml } from "@/lib/audit/types";
+import { extractFrequentTerms } from "@/lib/audit/extractFrequentTerms";
+import type { AuditCheck, FrequentTerm, ParsedHtml } from "@/lib/audit/types";
 
-const coreEntityTypes = new Set([
-  "Organization",
-  "Corporation",
-  "LocalBusiness",
-  "Person",
-  "NewsMediaOrganization",
-  "EducationalOrganization",
+const GENERIC_TERMS = new Set([
+  "effizient",
+  "efficient",
+  "individuell",
+  "innovation",
+  "innovativ",
+  "lösung",
+  "loesung",
+  "modern",
+  "professionell",
+  "professional",
+  "qualität",
+  "qualitaet",
+  "quality",
+  "reliable",
+  "service",
+  "solution",
+  "zuverlässig",
+  "zuverlaessig",
 ]);
 
-const companyKeywords = [
-  "about us",
-  "company",
-  "corporate",
-  "founded",
-  "impressum",
-  "inc",
-  "kontakt",
-  "llc",
-  "ltd",
-  "our company",
-  "team",
-  "unternehmen",
-  "über uns",
-  "gmbh",
-  "ag",
+const SERVICE_PATTERNS = [
+  "seo audit",
+  "seo-audit",
+  "content-strategie",
+  "content strategy",
+  "content-strategy",
+  "technische seo",
+  "technical seo",
+  "beratung",
+  "consulting",
+  "beratung",
+  "analyse",
+  "analysen",
+  "audit",
+  "audits",
+  "webdesign",
+  "website relaunch",
+  "relaunch",
+  "softwareentwicklung",
+  "software development",
+  "automation",
+  "migration",
+  "workshop",
+  "strategie",
 ];
 
-const trustLinkKeywords = [
-  "about",
-  "company",
-  "contact",
-  "impressum",
-  "kontakt",
-  "team",
-  "uber",
-  "über",
+const AUDIENCE_PATTERNS = [
+  /\b(?:für|for)\s+(?:b2b\s+)?(?:saas\s+)?(?:unternehmen|teams|brands|marketers|marketing-teams|founders|gründer|shops|praxen|kanzleien|scaleups|startups?)\b/iu,
+  /\b(?:zielgruppe|target audience|kunden|kund:innen|clients?|unternehmen|teams|brands|marketers|marketing-teams|founders|gründer|mittelstand|kmu|saas|b2b)\b/iu,
 ];
 
-const externalProfileDomains = [
-  "linkedin.com",
-  "crunchbase.com",
-  "github.com",
-  "twitter.com",
-  "x.com",
-  "youtube.com",
-  "wikipedia.org",
+const EXPERTISE_PATTERNS = [
+  /\b(?:autor|author|consultant|berater|expert(?:e|in|s)?|specialist|founder|co-founder|gegründet von|zertifiziert|certified|jahre erfahrung|years? of experience|team|speaker|editorial)\b/iu,
+  /\b[A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß]+\b.{0,40}\b(?:consultant|berater|author|autor|founder|experte|expertin)\b/u,
 ];
+
+const LOCATION_PATTERNS = [
+  /\b(?:standort|sitz|büro|buero|office|based in|located in|serving|service area|für kunden in|kunden in|aus)\s+[A-ZÄÖÜ][\p{L}-]+(?:\s+[A-ZÄÖÜ][\p{L}-]+){0,2}\b/gu,
+  /\b(?:in|aus|from)\s+[A-ZÄÖÜ][\p{L}-]+(?:\s+[A-ZÄÖÜ][\p{L}-]+){0,2}\b/gu,
+  /\b\d{5}\s+[A-ZÄÖÜ][\p{L}-]+/gu,
+];
+
+const BRAND_EXCLUSION_TERMS = new Set([
+  "agentur",
+  "ai",
+  "analysis",
+  "audit",
+  "b2b",
+  "beratung",
+  "content",
+  "growth",
+  "marketing",
+  "readiness",
+  "saas",
+  "seo",
+  "service",
+  "signal",
+  "strategy",
+  "visibility",
+  "websites",
+]);
+
+const GENERIC_WARNING =
+  "Die wichtigsten Begriffe wirken generisch. Die Seite könnte klarere Entitäten, Leistungen und Standorte benennen.";
 
 export function checkEntitySignals(
   parsed: ParsedHtml,
-  schemaTypes: string[],
+  _schemaTypes: string[],
+  frequentTerms: FrequentTerm[] = extractFrequentTerms(parsed.cleanText),
 ): AuditCheck[] {
-  const links = parsed.$("a[href]").toArray();
-  const lowerBody = parsed.cleanText.toLowerCase();
-  const combinedLinkValues = links.map((link) => {
-    const href = parsed.$(link).attr("href")?.toLowerCase() ?? "";
-    const text = parsed.$(link).text().toLowerCase();
-
-    return `${href} ${text}`.trim();
-  });
-
-  const hasTrustLinks = combinedLinkValues.some((value) =>
-    trustLinkKeywords.some((keyword) => value.includes(keyword)),
+  const text = parsed.cleanText;
+  const lowerText = text.toLowerCase();
+  const serviceMatches = collectPhraseMatches(lowerText, SERVICE_PATTERNS);
+  const audienceMatches = AUDIENCE_PATTERNS.filter((pattern) => pattern.test(text));
+  const expertiseMatches = EXPERTISE_PATTERNS.filter((pattern) => pattern.test(text));
+  const locationMatches = LOCATION_PATTERNS.flatMap((pattern) => [
+    ...text.matchAll(pattern),
+  ]);
+  const recurringRelevantTerms = frequentTerms.filter(
+    (term) => term.count >= 2 && !GENERIC_TERMS.has(term.term),
   );
-  const hasCoreEntitySchema = schemaTypes.some((type) => coreEntityTypes.has(type));
-  const hasCompanyLanguage = companyKeywords.some((keyword) =>
-    lowerBody.includes(keyword),
+  const dominantTerms = frequentTerms.slice(0, 5);
+  const genericDominantTerms = dominantTerms.filter((term) =>
+    GENERIC_TERMS.has(term.term),
   );
-  const matchingProfiles = combinedLinkValues.filter((value) =>
-    externalProfileDomains.some((domain) => value.includes(domain)),
+  const genericCount = genericDominantTerms.reduce(
+    (sum, term) => sum + term.count,
+    0,
   );
-  const hasContactSignal =
-    combinedLinkValues.some(
-      (value) => value.includes("mailto:") || value.includes("tel:"),
+  const dominantCount = dominantTerms.reduce((sum, term) => sum + term.count, 0);
+  const hasSpecificTerms =
+    dominantTerms.length > 0 &&
+    genericDominantTerms.length < 3 &&
+    (dominantCount === 0 || genericCount / dominantCount < 0.6);
+  const businessNameCandidates = extractBusinessNameCandidates(parsed);
+  const hasBusinessName =
+    /\b(?:gmbh|ag|ug|llc|ltd|inc|corp|corporation)\b/i.test(text) ||
+    /(?:©|copyright)\s*(?:\d{4}\s*)?[A-ZÄÖÜ][\p{L}&.-]+(?:\s+[A-ZÄÖÜ][\p{L}&.-]+){0,3}/u.test(
+      text,
     ) ||
-    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(parsed.cleanText) ||
-    /(\+\d[\d\s()./-]{6,}\d)/.test(parsed.cleanText);
+    businessNameCandidates.some((candidate) => text.includes(candidate));
 
   return [
     {
-      id: "entity-trust-links",
-      label: "About or contact trust links are present",
-      passed: hasTrustLinks,
-      weight: 6,
+      id: "entity-business-name-visible",
+      label: "Business name is explicitly mentioned",
+      passed: hasBusinessName,
+      weight: 4,
       category: "entitySignals",
       impact: "high",
       recommendation:
-        "Add visible about, team, contact or legal pages so entity context can be discovered more easily.",
-    },
-    {
-      id: "entity-schema",
-      label: "Entity-level schema is present",
-      passed: hasCoreEntitySchema,
-      weight: 6,
-      category: "entitySignals",
-      impact: "high",
-      recommendation:
-        "Add Organization, LocalBusiness or Person schema to clarify the primary entity behind the page.",
+        "Mention the business or brand name visibly in the page copy, hero, footer or contact context.",
       details:
-        schemaTypes.length > 0
-          ? `Detected schema types: ${schemaTypes.join(", ")}`
+        businessNameCandidates.length > 0
+          ? `Brand-like headings or title segments: ${businessNameCandidates.join(", ")}`
           : undefined,
     },
     {
-      id: "entity-company-language",
-      label: "Company or legal context appears in the copy",
-      passed: hasCompanyLanguage,
-      weight: 5,
+      id: "entity-location-signal",
+      label: "Location or service area is recognizable",
+      passed: locationMatches.length > 0,
+      weight: 4,
       category: "entitySignals",
-      impact: "medium",
+      impact: "high",
       recommendation:
-        "Include clearer company, legal or ownership context to strengthen entity understanding.",
+        "Name a location, office, region or service area so crawlers can connect the business to a place.",
+      details:
+        locationMatches.length > 0
+          ? `Detected location hints: ${uniqueStrings(locationMatches.map((match) => match[0])).join(", ")}`
+          : undefined,
     },
     {
-      id: "entity-external-profiles",
-      label: "External profile links are present",
-      passed: matchingProfiles.length > 0,
+      id: "entity-services-signal",
+      label: "Concrete services are named",
+      passed: serviceMatches.length >= 2,
+      weight: 4,
+      category: "entitySignals",
+      impact: "high",
+      recommendation:
+        "Name concrete services such as audits, consulting, strategy or implementation work.",
+      details:
+        serviceMatches.length > 0
+          ? `Detected services: ${serviceMatches.join(", ")}`
+          : undefined,
+    },
+    {
+      id: "entity-audience-signal",
+      label: "Target audience is recognizable",
+      passed: audienceMatches.length > 0,
       weight: 4,
       category: "entitySignals",
       impact: "medium",
       recommendation:
-        "Link to trusted external profiles such as LinkedIn, Crunchbase, GitHub or Wikipedia where relevant.",
+        "State who the page is for, for example B2B SaaS teams, founders or local businesses.",
     },
     {
-      id: "entity-contact-data",
-      label: "Contact signals are present",
-      passed: hasContactSignal,
+      id: "entity-expertise-signal",
+      label: "Author, person or expertise signals are visible",
+      passed: expertiseMatches.length > 0,
       weight: 4,
+      category: "entitySignals",
+      impact: "high",
+      recommendation:
+        "Add visible people, author or expertise cues such as a founder, team, credentials or years of experience.",
+    },
+    {
+      id: "entity-recurring-terms",
+      label: "Recurring relevant terms reinforce the topic",
+      passed: recurringRelevantTerms.length >= 2,
+      weight: 3,
       category: "entitySignals",
       impact: "medium",
       recommendation:
-        "Expose clear email, phone or contact details to improve trust and entity traceability.",
+        "Repeat a few relevant terms naturally so the page reinforces its main entities and services.",
+      details:
+        recurringRelevantTerms.length > 0
+          ? `Recurring terms: ${recurringRelevantTerms
+              .slice(0, 5)
+              .map((term) => `${term.term} (${term.count})`)
+              .join(", ")}`
+          : undefined,
+    },
+    {
+      id: "entity-specific-terms",
+      label: "Top recurring terms are specific rather than generic",
+      passed: hasSpecificTerms,
+      weight: 2,
+      category: "entitySignals",
+      impact: "medium",
+      recommendation: GENERIC_WARNING,
+      details:
+        genericDominantTerms.length > 0
+          ? `Generic dominant terms: ${genericDominantTerms
+              .map((term) => `${term.term} (${term.count})`)
+              .join(", ")}`
+          : undefined,
     },
   ];
+}
+
+function collectPhraseMatches(text: string, phrases: string[]) {
+  const matches = phrases.filter((phrase) => text.includes(phrase));
+  return uniqueStrings(matches);
+}
+
+function extractBusinessNameCandidates(parsed: ParsedHtml) {
+  const title = parsed.$("title").first().text().trim();
+  const headingTexts = parsed
+    .$("h1, h2, h3, strong, b")
+    .toArray()
+    .map((element) => parsed.$(element).text().replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  return uniqueStrings([
+    ...splitBrandCandidates(title),
+    ...headingTexts.flatMap((heading) => splitBrandCandidates(heading)),
+  ]);
+}
+
+function splitBrandCandidates(value: string) {
+  return value
+    .split(/[|–—-]/)
+    .map((segment) => segment.trim())
+    .filter((segment) => isBrandLikeSegment(segment));
+}
+
+function isBrandLikeSegment(segment: string) {
+  const words = segment.split(/\s+/).filter(Boolean);
+
+  if (words.length === 0 || words.length > 4) {
+    return false;
+  }
+
+  const normalizedWords = words.map((word) =>
+    word.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ""),
+  );
+
+  if (
+    normalizedWords.every(
+      (word) => BRAND_EXCLUSION_TERMS.has(word) || GENERIC_TERMS.has(word),
+    )
+  ) {
+    return false;
+  }
+
+  return words.every((word) => /^[A-ZÄÖÜ0-9][\p{L}&.-]*$/u.test(word));
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values)];
 }

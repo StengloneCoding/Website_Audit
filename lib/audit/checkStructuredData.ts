@@ -1,37 +1,40 @@
 import type {
   AuditCheck,
-  JsonLdExtractionResult,
+  ParsedHtml,
+  JsonLdParseResult,
   StructuredDataSummary,
 } from "@/lib/audit/types";
 
-const coreSchemaTypes = new Set([
-  "Organization",
-  "Corporation",
-  "LocalBusiness",
-  "Person",
-  "WebSite",
-  "WebPage",
-  "Article",
-  "Service",
-  "Product",
-]);
+const fallbackSchemaRecommendation =
+  "Add JSON-LD schema to clarify the business entity, services, location and page purpose.";
 
-export function checkStructuredData(jsonLd: JsonLdExtractionResult): {
+export function checkStructuredData(
+  jsonLd: JsonLdParseResult,
+  parsed?: ParsedHtml,
+): {
   checks: AuditCheck[];
   summary: StructuredDataSummary;
 } {
-  const hasCoreType = jsonLd.types.some((type) => coreSchemaTypes.has(type));
+  const hasSchema = jsonLd.rawBlockCount > 0;
+  const hasValidJsonLd = jsonLd.validBlocks.length > 0 && jsonLd.invalidBlockCount === 0;
+  const hasOrganizationOrLocalBusiness = hasAnyType(jsonLd.schemaTypes, [
+    "Organization",
+    "LocalBusiness",
+  ]);
+  const hasWebSite = hasAnyType(jsonLd.schemaTypes, ["WebSite"]);
+  const hasService = hasAnyType(jsonLd.schemaTypes, ["Service"]);
+  const faqRelevant = parsed ? hasFaqContent(parsed) : false;
+  const hasFaqPage = hasAnyType(jsonLd.schemaTypes, ["FAQPage"]);
 
   const checks: AuditCheck[] = [
     {
       id: "structured-jsonld-present",
       label: "JSON-LD is present",
-      passed: jsonLd.rawBlockCount > 0,
+      passed: hasSchema,
       weight: 4,
       category: "structuredData",
       impact: "high",
-      recommendation:
-        "Add JSON-LD markup to expose machine-readable context through schema.org.",
+      recommendation: fallbackSchemaRecommendation,
       details:
         jsonLd.rawBlockCount > 0
           ? `Detected ${jsonLd.rawBlockCount} JSON-LD block(s).`
@@ -40,50 +43,110 @@ export function checkStructuredData(jsonLd: JsonLdExtractionResult): {
     {
       id: "structured-jsonld-valid",
       label: "JSON-LD is parseable",
-      passed: jsonLd.items.length > 0 && jsonLd.invalidBlocks === 0,
-      weight: 4,
+      passed: hasValidJsonLd,
+      weight: 3,
       category: "structuredData",
       impact: "high",
       recommendation:
-        "Validate JSON-LD blocks to ensure they can be parsed without errors.",
+        hasSchema
+          ? "Fix invalid JSON-LD blocks so the declared schema can be parsed consistently."
+          : fallbackSchemaRecommendation,
       details:
-        jsonLd.invalidBlocks > 0
-          ? `${jsonLd.invalidBlocks} block(s) could not be parsed.`
+        jsonLd.invalidBlockCount > 0
+          ? `${jsonLd.invalidBlockCount} block(s) could not be parsed.`
           : undefined,
     },
     {
-      id: "structured-schema-types",
-      label: "Recognizable schema types are declared",
-      passed: jsonLd.types.length > 0,
-      weight: 4,
-      category: "structuredData",
-      impact: "medium",
-      recommendation:
-        "Declare explicit schema types such as Organization, WebSite, Article or Service.",
-      details:
-        jsonLd.types.length > 0
-          ? `Detected types: ${jsonLd.types.join(", ")}`
-          : undefined,
-    },
-    {
-      id: "structured-core-entity",
-      label: "Core page or entity schema is present",
-      passed: hasCoreType,
+      id: "structured-organization-or-local-business",
+      label: "Organization or LocalBusiness schema is present",
+      passed: hasOrganizationOrLocalBusiness,
       weight: 3,
       category: "structuredData",
+      impact: "high",
+      recommendation:
+        hasSchema
+          ? "Add Organization or LocalBusiness schema to clarify the primary business entity."
+          : fallbackSchemaRecommendation,
+      details:
+        jsonLd.schemaTypes.length > 0
+          ? `Detected types: ${jsonLd.schemaTypes.join(", ")}`
+          : undefined,
+    },
+    {
+      id: "structured-website",
+      label: "WebSite schema is present",
+      passed: hasWebSite,
+      weight: 2,
+      category: "structuredData",
       impact: "medium",
       recommendation:
-        "Add core entity or page-level schema to describe the site, brand or page purpose.",
+        hasSchema
+          ? "Add WebSite schema to describe the overall site context in machine-readable form."
+          : fallbackSchemaRecommendation,
+    },
+    {
+      id: "structured-service",
+      label: "Service schema is present",
+      passed: hasService,
+      weight: 2,
+      category: "structuredData",
+      impact: "medium",
+      recommendation:
+        hasSchema
+          ? "Add Service schema to describe the main offer and its business relevance."
+          : fallbackSchemaRecommendation,
     },
   ];
+
+  if (faqRelevant) {
+    checks.push({
+      id: "structured-faqpage",
+      label: "Visible FAQ content is backed by FAQPage schema",
+      passed: hasFaqPage,
+      weight: 1,
+      category: "structuredData",
+      impact: "low",
+      recommendation:
+        hasSchema
+          ? "Add FAQPage schema for visible FAQ sections so questions and answers become machine-readable."
+          : fallbackSchemaRecommendation,
+    });
+  }
 
   return {
     checks,
     summary: {
       rawBlockCount: jsonLd.rawBlockCount,
       validItemCount: jsonLd.items.length,
-      invalidBlockCount: jsonLd.invalidBlocks,
-      types: jsonLd.types,
+      invalidBlockCount: jsonLd.invalidBlockCount,
     },
   };
+}
+
+function hasAnyType(schemaTypes: string[], expectedTypes: string[]) {
+  return expectedTypes.some((expectedType) => schemaTypes.includes(expectedType));
+}
+
+function hasFaqContent(parsed: ParsedHtml) {
+  const normalizedText = parsed.cleanText.toLowerCase();
+
+  if (
+    normalizedText.includes("faq") ||
+    normalizedText.includes("frequently asked questions") ||
+    normalizedText.includes("haufige fragen") ||
+    normalizedText.includes("häufige fragen")
+  ) {
+    return true;
+  }
+
+  const questionLikeBlocks = parsed
+    .$("h1, h2, h3, h4, summary, dt, p, li")
+    .toArray()
+    .filter((element) => {
+      const text = parsed.$(element).text().replace(/\s+/g, " ").trim();
+
+      return text.includes("?");
+    });
+
+  return questionLikeBlocks.length >= 2;
 }
