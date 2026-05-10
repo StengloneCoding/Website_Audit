@@ -12,8 +12,7 @@ import { parseHtml } from "@/lib/audit/parseHtml";
 import {
   AuditError,
   type AuditCheck,
-  type AuditResult,
-  type PageFetchResult,
+  type FetchPageResult,
 } from "@/lib/audit/types";
 import { validateUrl } from "@/lib/audit/validateUrl";
 
@@ -40,9 +39,9 @@ export async function POST(request: Request) {
     const { seoBasics, checks: seoChecks } = extractSeoBasics(parsed);
     const jsonLd = extractJsonLd(parsed);
     const { checks: structuredDataChecks, summary: schemaSummary } =
-      checkStructuredData(jsonLd);
+      checkStructuredData(jsonLd, parsed);
     const contentChecks = checkContentClarity(parsed, seoBasics);
-    const entityChecks = checkEntitySignals(parsed, jsonLd.types);
+    const entityChecks = checkEntitySignals(parsed, jsonLd.schemaTypes);
     const technicalChecks = buildTechnicalChecks(page);
     const frequentTerms = extractFrequentTerms(parsed.cleanText);
     const checks = [
@@ -52,30 +51,25 @@ export async function POST(request: Request) {
       ...structuredDataChecks,
       ...technicalChecks,
     ];
-    const scoring = calculateScore(checks);
-
-    const result: AuditResult = {
-      inputUrl: validatedUrl.normalizedUrl,
-      finalUrl: page.finalUrl,
-      analyzedAt: new Date().toISOString(),
-      score: scoring.score,
-      categoryBreakdown: scoring.categoryBreakdown,
+    const result = calculateScore({
+      url: page.finalUrl,
       checks,
-      strongSignals: scoring.strongSignals,
-      weakSignals: scoring.weakSignals,
-      issues: scoring.issues,
-      recommendations: scoring.recommendations,
       frequentTerms,
-      schemaSummary,
-      seoBasics,
-      technical: {
-        status: page.status,
-        contentType: page.contentType,
-        responseTimeMs: page.responseTimeMs,
-        htmlBytes: page.htmlBytes,
-        redirectCount: page.redirectCount,
+      schemaTypes: jsonLd.schemaTypes,
+      metadata: {
+        analyzedAt: new Date().toISOString(),
+        requestedUrl: validatedUrl.normalizedUrl,
+        finalUrl: page.finalUrl,
+        technical: {
+          status: page.status,
+          contentType: page.contentType,
+          responseTimeMs: page.responseTimeMs,
+          htmlBytes: page.htmlBytes,
+          redirectCount: page.redirectCount,
+        },
+        structuredData: schemaSummary,
       },
-    };
+    });
 
     return NextResponse.json(result);
   } catch (error) {
@@ -97,7 +91,7 @@ export async function POST(request: Request) {
   }
 }
 
-function buildTechnicalChecks(page: PageFetchResult): AuditCheck[] {
+function buildTechnicalChecks(page: FetchPageResult): AuditCheck[] {
   const finalProtocol = new URL(page.finalUrl).protocol;
 
   return [

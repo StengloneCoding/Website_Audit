@@ -4,7 +4,14 @@ import {
   CATEGORY_ORDER,
   type AuditCheck,
   type AuditImpact,
+  type AuditIssue,
+  type AuditMetadata,
+  type AuditRecommendation,
+  type AuditResult,
   type CategoryScore,
+  type FrequentTerm,
+  type StructuredDataSummary,
+  type TechnicalMetadata,
 } from "@/lib/audit/types";
 
 const impactPriority: Record<AuditImpact, number> = {
@@ -13,67 +20,84 @@ const impactPriority: Record<AuditImpact, number> = {
   low: 1,
 };
 
-export function calculateScore(checks: AuditCheck[]): {
-  score: number;
-  categoryBreakdown: CategoryScore[];
-  strongSignals: AuditCheck[];
-  weakSignals: AuditCheck[];
-  issues: AuditCheck[];
-  recommendations: string[];
-} {
-  const categoryBreakdown = CATEGORY_ORDER.map((category) => {
+type CalculateScoreMetadataInput = Partial<
+  Omit<AuditMetadata, "technical" | "structuredData">
+> & {
+  technical?: Partial<TechnicalMetadata>;
+  structuredData?: Partial<StructuredDataSummary>;
+};
+
+export interface CalculateScoreInput {
+  url: string;
+  checks: AuditCheck[];
+  frequentTerms?: FrequentTerm[];
+  schemaTypes?: string[];
+  metadata?: CalculateScoreMetadataInput;
+}
+
+export function calculateScore({
+  url,
+  checks,
+  frequentTerms = [],
+  schemaTypes = [],
+  metadata,
+}: CalculateScoreInput): AuditResult {
+  const scoredCategories = CATEGORY_ORDER.map((category) => {
     const categoryChecks = checks.filter((check) => check.category === category);
     const maxScore = CATEGORY_MAX_SCORES[category];
     const totalWeight = categoryChecks.reduce(
-      (sum, check) => sum + check.weight,
+      (sum, check) => sum + normalizeWeight(check.weight),
       0,
     );
-    const passedWeight = categoryChecks
-      .filter((check) => check.passed)
-      .reduce((sum, check) => sum + check.weight, 0);
-    const score =
-      totalWeight === 0
-        ? 0
-        : Number(((passedWeight / totalWeight) * maxScore).toFixed(1));
+    const passedWeight = categoryChecks.reduce(
+      (sum, check) =>
+        check.passed ? sum + normalizeWeight(check.weight) : sum,
+      0,
+    );
+    const rawScore =
+      totalWeight === 0 ? 0 : clamp((passedWeight / totalWeight) * maxScore, 0, maxScore);
+    const score = roundToOneDecimal(rawScore);
 
     return {
-      category,
-      label: CATEGORY_LABELS[category],
-      score,
-      maxScore,
-      percentage: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
-      passedChecks: categoryChecks.filter((check) => check.passed).length,
-      totalChecks: categoryChecks.length,
+      rawScore,
+      categoryScore: {
+        category,
+        label: CATEGORY_LABELS[category],
+        score,
+        maxScore,
+        percentage:
+          totalWeight === 0 ? 0 : Math.round((passedWeight / totalWeight) * 100),
+        passedChecks: categoryChecks.filter((check) => check.passed).length,
+        totalChecks: categoryChecks.length,
+      } satisfies CategoryScore,
     };
   });
 
   const sortedChecks = [...checks].sort(sortChecksByPriority);
-  const strongSignals = sortedChecks.filter((check) => check.passed).slice(0, 6);
-  const weakSignals = sortedChecks.filter((check) => !check.passed).slice(0, 6);
-  const issues =
-    sortedChecks
-      .filter(
-        (check) => !check.passed && (check.impact === "high" || check.weight >= 5),
-      )
-      .slice(0, 6) || [];
-  const recommendations = Array.from(
-    new Set(
-      sortedChecks
-        .filter((check) => !check.passed)
-        .map((check) => check.recommendation),
-    ),
-  ).slice(0, 5);
-  const score = Math.round(
-    categoryBreakdown.reduce((sum, category) => sum + category.score, 0),
+  const strongSignals = sortedChecks.filter((check) => check.passed);
+  const weakSignals = sortedChecks.filter((check) => !check.passed);
+  const issues = weakSignals
+    .filter((check) => check.impact === "high" || check.impact === "medium")
+    .map(mapCheckToIssue);
+  const recommendations = buildRecommendations(weakSignals);
+  const score = clamp(
+    Math.round(scoredCategories.reduce((sum, entry) => sum + entry.rawScore, 0)),
+    0,
+    100,
   );
 
   return {
+    url,
     score,
-    categoryBreakdown,
+    categories: scoredCategories.map((entry) => entry.categoryScore),
     strongSignals,
     weakSignals,
-    issues: issues.length > 0 ? issues : weakSignals.slice(0, 4),
+    issues,
     recommendations,
+    frequentTerms,
+    schemaTypes,
+    metadata: buildMetadata(url, metadata),
+    checks,
   };
 }
 
@@ -87,4 +111,76 @@ function sortChecksByPriority(left: AuditCheck, right: AuditCheck) {
   }
 
   return left.label.localeCompare(right.label);
+}
+
+function mapCheckToIssue(check: AuditCheck): AuditIssue {
+  return {
+    id: check.id,
+    label: check.label,
+    category: check.category,
+    impact: check.impact,
+    weight: check.weight,
+    recommendation: check.recommendation,
+    details: check.details,
+  };
+}
+
+function buildRecommendations(failedChecks: AuditCheck[]): AuditRecommendation[] {
+  const seenRecommendations = new Set<string>();
+  const recommendations: AuditRecommendation[] = [];
+
+  for (const check of failedChecks) {
+    const recommendationKey = check.recommendation.trim().toLowerCase();
+
+    if (recommendationKey.length === 0 || seenRecommendations.has(recommendationKey)) {
+      continue;
+    }
+
+    seenRecommendations.add(recommendationKey);
+    recommendations.push({
+      id: `recommendation-${check.id}`,
+      label: check.label,
+      text: check.recommendation,
+      category: check.category,
+      impact: check.impact,
+      sourceCheckId: check.id,
+    });
+  }
+
+  return recommendations;
+}
+
+function buildMetadata(
+  url: string,
+  metadata: CalculateScoreMetadataInput | undefined,
+): AuditMetadata {
+  return {
+    analyzedAt: metadata?.analyzedAt ?? new Date().toISOString(),
+    requestedUrl: metadata?.requestedUrl ?? url,
+    finalUrl: metadata?.finalUrl ?? url,
+    technical: {
+      status: metadata?.technical?.status ?? 0,
+      contentType: metadata?.technical?.contentType ?? null,
+      responseTimeMs: metadata?.technical?.responseTimeMs ?? 0,
+      htmlBytes: metadata?.technical?.htmlBytes ?? 0,
+      redirectCount: metadata?.technical?.redirectCount ?? 0,
+    },
+    structuredData: {
+      rawBlockCount: metadata?.structuredData?.rawBlockCount ?? 0,
+      validItemCount: metadata?.structuredData?.validItemCount ?? 0,
+      invalidBlockCount: metadata?.structuredData?.invalidBlockCount ?? 0,
+    },
+  };
+}
+
+function normalizeWeight(weight: number) {
+  return Number.isFinite(weight) && weight > 0 ? weight : 0;
+}
+
+function roundToOneDecimal(value: number) {
+  return Number(value.toFixed(1));
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
