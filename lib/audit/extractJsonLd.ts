@@ -1,34 +1,61 @@
-import type { JsonLdExtractionResult, JsonLdNode, ParsedHtml } from "@/lib/audit/types";
+import type {
+  InvalidJsonLdBlock,
+  JsonLdBlock,
+  JsonLdNode,
+  JsonLdParseResult,
+  ParsedHtml,
+} from "@/lib/audit/types";
 
-export function extractJsonLd(parsed: ParsedHtml): JsonLdExtractionResult {
+export function extractJsonLd(parsed: ParsedHtml): JsonLdParseResult {
   const scripts = parsed.$('script[type="application/ld+json"]').toArray();
   const items: JsonLdNode[] = [];
-  let invalidBlocks = 0;
+  const validBlocks: JsonLdBlock[] = [];
+  const invalidBlocks: InvalidJsonLdBlock[] = [];
+  const schemaTypes = new Set<string>();
 
   for (const script of scripts) {
     const content = parsed.$(script).html()?.trim();
 
     if (!content) {
+      invalidBlocks.push({
+        content: "",
+        message: "JSON-LD block is empty.",
+      });
       continue;
     }
 
     try {
       const parsedJson = JSON.parse(sanitizeJsonLd(content)) as unknown;
-      items.push(...collectJsonLdItems(parsedJson));
-    } catch {
-      invalidBlocks += 1;
+
+      if (!isJsonLdBlock(parsedJson)) {
+        invalidBlocks.push({
+          content,
+          message: "JSON-LD must contain an object or array at the top level.",
+        });
+        continue;
+      }
+
+      const blockItems = collectJsonLdItems(parsedJson);
+
+      validBlocks.push(parsedJson);
+      items.push(...blockItems);
+      collectSchemaTypes(parsedJson, schemaTypes);
+    } catch (error) {
+      invalidBlocks.push({
+        content,
+        message:
+          error instanceof Error ? error.message : "JSON-LD could not be parsed.",
+      });
     }
   }
 
-  const types = Array.from(
-    new Set(items.flatMap((item) => extractTypes(item)).filter(Boolean)),
-  ).sort();
-
   return {
     items,
+    validBlocks,
     invalidBlocks,
+    invalidBlockCount: invalidBlocks.length,
     rawBlockCount: scripts.length,
-    types,
+    schemaTypes: Array.from(schemaTypes).sort(),
   };
 }
 
@@ -39,6 +66,10 @@ function sanitizeJsonLd(content: string) {
     .replace(/^\/\*<!\[CDATA\[\*\//, "")
     .replace(/\/\*\]\]>\*\/$/, "")
     .trim();
+}
+
+function isJsonLdBlock(value: unknown): value is JsonLdBlock {
+  return Array.isArray(value) || Boolean(value && typeof value === "object");
 }
 
 function collectJsonLdItems(value: unknown): JsonLdNode[] {
@@ -72,4 +103,28 @@ function extractTypes(node: JsonLdNode) {
   }
 
   return [];
+}
+
+function collectSchemaTypes(value: unknown, schemaTypes: Set<string>) {
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      collectSchemaTypes(entry, schemaTypes);
+    }
+
+    return;
+  }
+
+  if (!value || typeof value !== "object") {
+    return;
+  }
+
+  const node = value as JsonLdNode;
+
+  for (const type of extractTypes(node)) {
+    schemaTypes.add(type);
+  }
+
+  for (const nestedValue of Object.values(node)) {
+    collectSchemaTypes(nestedValue, schemaTypes);
+  }
 }

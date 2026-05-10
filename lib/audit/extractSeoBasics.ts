@@ -4,32 +4,53 @@ export function extractSeoBasics(parsed: ParsedHtml): {
   seoBasics: SeoBasics;
   checks: AuditCheck[];
 } {
-  const title = parsed.$("title").first().text().trim() || null;
-  const metaDescription =
-    parsed.$('meta[name="description"]').attr("content")?.trim() || null;
-  const canonical =
-    parsed.$('link[rel="canonical"]').attr("href")?.trim() || null;
-  const robots = parsed.$('meta[name="robots"]').attr("content")?.trim() || null;
+  const title = getTrimmedText(parsed, "title");
+  const description = getMetaContent(parsed, "description");
+  const canonical = getCanonicalHref(parsed);
+  const robots = getMetaContent(parsed, "robots");
+  const ogTitle = getMetaProperty(parsed, "og:title");
+  const ogDescription = getMetaProperty(parsed, "og:description");
   const lang = parsed.$("html").attr("lang")?.trim() || null;
-  const viewport =
-    parsed.$('meta[name="viewport"]').attr("content")?.trim() || null;
-  const h1Headings = parsed
+  const viewport = getMetaContent(parsed, "viewport");
+  const h1s = parsed
     .$("h1")
     .toArray()
     .map((element) => parsed.$(element).text().replace(/\s+/g, " ").trim())
     .filter(Boolean);
   const h2Count = parsed.$("h2").length;
+  const links = parsed.$("a[href]").toArray();
+  const internalLinksCount = links.filter((link) => isInternalLink(parsed.$(link).attr("href"))).length;
+  const externalLinksCount = links.filter((link) => isExternalLink(parsed.$(link).attr("href"))).length;
+  const images = parsed.$("img").toArray();
+  const imagesCount = images.length;
+  const imagesWithAltCount = images.filter((image) => {
+    const alt = parsed.$(image).attr("alt");
+    return typeof alt === "string" && alt.trim().length > 0;
+  }).length;
+  const textLength = parsed.visibleText.length;
+  const titleLength = title?.length ?? 0;
+  const metaDescriptionLength = description?.length ?? 0;
+  const hasNoindex = typeof robots === "string" && /\bnoindex\b/i.test(robots);
 
   const seoBasics: SeoBasics = {
     title,
-    titleLength: title?.length ?? 0,
-    metaDescription,
-    metaDescriptionLength: metaDescription?.length ?? 0,
+    description,
+    h1s,
+    ogTitle,
+    ogDescription,
+    internalLinksCount,
+    externalLinksCount,
+    imagesCount,
+    imagesWithAltCount,
+    textLength,
+    titleLength,
+    metaDescription: description,
+    metaDescriptionLength,
     canonical,
     robots,
     lang,
     viewport,
-    h1Headings,
+    h1Headings: h1s,
     h2Count,
   };
 
@@ -42,72 +63,101 @@ export function extractSeoBasics(parsed: ParsedHtml): {
       category: "seoBasics",
       impact: "high",
       recommendation:
-        "Add a unique page title that clearly states the main topic and brand context.",
+        "Add a unique title tag that clearly explains the page topic and business context.",
       details: title ? `Detected title: ${title}` : undefined,
     },
     {
       id: "seo-title-length",
-      label: "Title length is descriptive",
-      passed: Boolean(title && title.length >= 20 && title.length <= 65),
+      label: "Title length is within a useful range",
+      passed: Boolean(title && title.length >= 15 && title.length <= 65),
       weight: 4,
       category: "seoBasics",
       impact: "medium",
       recommendation:
-        "Keep the title focused and descriptive, ideally within roughly 20 to 65 characters.",
+        "Keep the title concise but descriptive, ideally somewhere between 15 and 65 characters.",
       details: title ? `Current length: ${title.length} characters.` : undefined,
     },
     {
-      id: "seo-meta-description",
+      id: "seo-description-present",
       label: "Meta description is present",
-      passed: Boolean(
-        metaDescription &&
-          metaDescription.length >= 70 &&
-          metaDescription.length <= 170,
-      ),
-      weight: 5,
+      passed: Boolean(description),
+      weight: 4,
       category: "seoBasics",
       impact: "high",
       recommendation:
-        "Add a concise meta description that summarizes the page for crawlers and humans.",
-      details: metaDescription
-        ? `Current length: ${metaDescription.length} characters.`
+        "Add a meta description that summarizes the page in a clear, machine-readable way.",
+      details: description
+        ? `Current length: ${description.length} characters.`
         : undefined,
     },
     {
-      id: "seo-single-h1",
-      label: "Page uses a single clear H1",
-      passed: h1Headings.length === 1 && h1Headings[0].length >= 3,
+      id: "seo-h1-present",
+      label: "At least one H1 is present",
+      passed: h1s.length > 0,
       weight: 4,
       category: "seoBasics",
       impact: "medium",
       recommendation:
-        "Use one clear H1 heading that anchors the page's main topic.",
-      details:
-        h1Headings.length > 0
-          ? `Detected ${h1Headings.length} H1 heading(s).`
-          : undefined,
+        "Add a visible H1 heading that states the main topic or offer of the page.",
+      details: h1s.length > 0 ? `Detected ${h1s.length} H1 heading(s).` : undefined,
     },
     {
-      id: "seo-canonical",
+      id: "seo-canonical-present",
       label: "Canonical URL is declared",
       passed: Boolean(canonical),
       weight: 4,
       category: "seoBasics",
       impact: "medium",
       recommendation:
-        "Add a canonical link to clarify the preferred version of the page.",
+        "Add a canonical link to clarify the preferred page URL for crawlers and AI systems.",
       details: canonical ? `Detected canonical: ${canonical}` : undefined,
     },
     {
-      id: "seo-lang",
-      label: "HTML language attribute is set",
-      passed: Boolean(lang),
-      weight: 3,
+      id: "seo-noindex-not-set",
+      label: "Robots meta does not block indexing",
+      passed: !hasNoindex,
+      weight: 4,
       category: "seoBasics",
+      impact: "high",
+      recommendation:
+        "Remove noindex from the robots meta tag if this page should remain discoverable.",
+      details: robots ? `Detected robots directive: ${robots}` : undefined,
+    },
+    {
+      id: "technical-text-sufficient",
+      label: "Page contains enough visible text",
+      passed: textLength >= 200,
+      weight: 4,
+      category: "technicalAccessibility",
+      impact: "medium",
+      recommendation:
+        "Add more visible copy so machines can infer the page topic, offer and surrounding context.",
+      details: `Visible text length: ${textLength} characters.`,
+    },
+    {
+      id: "technical-images-have-alt",
+      label: "Images include alt text where relevant",
+      passed: imagesCount === 0 || imagesWithAltCount >= Math.ceil(imagesCount / 2),
+      weight: 3,
+      category: "technicalAccessibility",
+      impact: "medium",
+      recommendation:
+        "Add alt text to informative images so their context remains understandable beyond the pixels.",
+      details:
+        imagesCount > 0
+          ? `${imagesWithAltCount} of ${imagesCount} image(s) include alt text.`
+          : "No images were detected on the page.",
+    },
+    {
+      id: "technical-internal-links-present",
+      label: "Page includes internal links",
+      passed: internalLinksCount > 0,
+      weight: 3,
+      category: "technicalAccessibility",
       impact: "low",
       recommendation:
-        "Set the HTML lang attribute so search engines and models can infer the content language more reliably.",
-      details: lang ? `Detected language: ${lang}` : undefined,
+        "Link to related internal pages so crawlers and models can follow the surrounding site context.",
+      details: `Detected ${internalLinksCount} internal link(s).`,
     },
   ];
 
@@ -115,4 +165,60 @@ export function extractSeoBasics(parsed: ParsedHtml): {
     seoBasics,
     checks,
   };
+}
+
+function getTrimmedText(parsed: ParsedHtml, selector: string) {
+  const value = parsed.$(selector).first().text().trim();
+  return value.length > 0 ? value : null;
+}
+
+function getMetaContent(parsed: ParsedHtml, name: string) {
+  const value = parsed.$(`meta[name="${name}"]`).attr("content")?.trim() ?? "";
+  return value.length > 0 ? value : null;
+}
+
+function getMetaProperty(parsed: ParsedHtml, property: string) {
+  const value = parsed.$(`meta[property="${property}"]`).attr("content")?.trim() ?? "";
+  return value.length > 0 ? value : null;
+}
+
+function getCanonicalHref(parsed: ParsedHtml) {
+  const value = parsed.$('link[rel="canonical"]').attr("href")?.trim() ?? "";
+  return value.length > 0 ? value : null;
+}
+
+function isExternalLink(href: string | undefined) {
+  if (!href) {
+    return false;
+  }
+
+  return /^(https?:)?\/\//i.test(href.trim());
+}
+
+function isInternalLink(href: string | undefined) {
+  if (!href) {
+    return false;
+  }
+
+  const normalized = href.trim().toLowerCase();
+
+  if (
+    normalized.length === 0 ||
+    normalized.startsWith("mailto:") ||
+    normalized.startsWith("tel:") ||
+    normalized.startsWith("javascript:")
+  ) {
+    return false;
+  }
+
+  if (isExternalLink(normalized)) {
+    return false;
+  }
+
+  return (
+    normalized.startsWith("/") ||
+    normalized.startsWith("#") ||
+    normalized.startsWith("?") ||
+    !normalized.includes(":")
+  );
 }
