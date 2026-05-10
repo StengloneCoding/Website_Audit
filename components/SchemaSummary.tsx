@@ -5,9 +5,10 @@ import type { StructuredDataSummary } from "@/lib/audit/types";
 
 interface SchemaSummaryProps {
   summary: StructuredDataSummary;
+  schemaTypes: string[];
 }
 
-export function SchemaSummary({ summary }: SchemaSummaryProps) {
+export function SchemaSummary({ summary, schemaTypes }: SchemaSummaryProps) {
   return (
     <article className="panel p-6 md:p-7">
       <div className="space-y-2">
@@ -52,8 +53,8 @@ export function SchemaSummary({ summary }: SchemaSummaryProps) {
       <div className="mt-6 rounded-2xl border border-slate-900/8 bg-white/85 p-4">
         <p className="text-sm font-medium text-slate-900">Detected schema types</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {summary.types.length > 0 ? (
-            summary.types.map((type) => (
+          {schemaTypes.length > 0 ? (
+            schemaTypes.map((type) => (
               <span
                 key={type}
                 className="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-700"

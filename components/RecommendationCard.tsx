@@ -1,10 +1,21 @@
 "use client";
 
 import { ArrowRight, Lightbulb } from "lucide-react";
+import {
+  CATEGORY_LABELS,
+  type AuditImpact,
+  type AuditRecommendation,
+} from "@/lib/audit/types";
 
 interface RecommendationCardProps {
-  recommendations: string[];
+  recommendations: AuditRecommendation[];
 }
+
+const impactClasses: Record<AuditImpact, string> = {
+  low: "bg-slate-100 text-slate-700",
+  medium: "bg-amber-100 text-amber-900",
+  high: "bg-red-100 text-red-900",
+};
 
 export function RecommendationCard({
   recommendations,
@@ -24,19 +35,27 @@ export function RecommendationCard({
         {recommendations.length > 0 ? (
           recommendations.map((recommendation) => (
             <div
-              key={recommendation}
+              key={recommendation.id}
               className="flex items-start gap-3 rounded-2xl border border-slate-900/8 bg-white/85 p-4"
             >
               <div className="mt-0.5 flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-teal-100 text-teal-800">
                 <Lightbulb className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
+                <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
                   <ArrowRight className="h-4 w-4 text-slate-400" />
-                  Suggested improvement
+                  {recommendation.label}
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${impactClasses[recommendation.impact]}`}
+                  >
+                    {recommendation.impact} impact
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                    {CATEGORY_LABELS[recommendation.category]}
+                  </span>
                 </div>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
-                  {recommendation}
+                  {recommendation.text}
                 </p>
               </div>
             </div>

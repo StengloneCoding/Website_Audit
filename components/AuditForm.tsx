@@ -130,10 +130,10 @@ export function AuditForm() {
           <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
             <ScoreCard
               score={result.score}
-              analyzedAt={result.analyzedAt}
-              finalUrl={result.finalUrl}
+              analyzedAt={result.metadata.analyzedAt}
+              url={result.url}
             />
-            <CategoryBreakdown categoryBreakdown={result.categoryBreakdown} />
+            <CategoryBreakdown categories={result.categories} />
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -158,7 +158,10 @@ export function AuditForm() {
 
           <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
             <FrequentTerms terms={result.frequentTerms} />
-            <SchemaSummary summary={result.schemaSummary} />
+            <SchemaSummary
+              summary={result.metadata.structuredData}
+              schemaTypes={result.schemaTypes}
+            />
           </div>
         </section>
       ) : null}

@@ -5,7 +5,7 @@ import { CalendarClock, Globe, ShieldCheck } from "lucide-react";
 interface ScoreCardProps {
   score: number;
   analyzedAt: string;
-  finalUrl: string;
+  url: string;
 }
 
 function getScoreLabel(score: number) {
@@ -23,7 +23,7 @@ function getScoreLabel(score: number) {
 export function ScoreCard({
   score,
   analyzedAt,
-  finalUrl,
+  url,
 }: ScoreCardProps) {
   return (
     <article className="panel p-6 md:p-7">
@@ -60,7 +60,7 @@ export function ScoreCard({
             <Globe className="h-4 w-4" />
             Audited URL
           </div>
-          <p className="mt-2 break-all font-medium text-slate-900">{finalUrl}</p>
+          <p className="mt-2 break-all font-medium text-slate-900">{url}</p>
         </div>
         <div className="rounded-2xl border border-slate-900/8 bg-white/80 p-4">
           <div className="flex items-center gap-2 text-slate-500">

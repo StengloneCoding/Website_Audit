@@ -3,12 +3,12 @@
 import { AlertTriangle } from "lucide-react";
 import {
   CATEGORY_LABELS,
-  type AuditCheck,
   type AuditImpact,
+  type AuditIssue,
 } from "@/lib/audit/types";
 
 interface IssueListProps {
-  issues: AuditCheck[];
+  issues: AuditIssue[];
 }
 
 const impactClasses: Record<AuditImpact, string> = {

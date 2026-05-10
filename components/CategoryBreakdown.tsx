@@ -3,12 +3,10 @@
 import { CATEGORY_LABELS, type CategoryScore } from "@/lib/audit/types";
 
 interface CategoryBreakdownProps {
-  categoryBreakdown: CategoryScore[];
+  categories: CategoryScore[];
 }
 
-export function CategoryBreakdown({
-  categoryBreakdown,
-}: CategoryBreakdownProps) {
+export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
   return (
     <article className="panel p-6 md:p-7">
       <div className="space-y-2">
@@ -21,7 +19,7 @@ export function CategoryBreakdown({
       </div>
 
       <div className="mt-6 space-y-4">
-        {categoryBreakdown.map((entry) => (
+        {categories.map((entry) => (
           <div
             key={entry.category}
             className="rounded-2xl border border-slate-900/8 bg-white/80 p-4"
