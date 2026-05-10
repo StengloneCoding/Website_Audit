@@ -1,31 +1,38 @@
-import dns from "node:dns/promises";
-import type { LookupAddress } from "node:dns";
 import { isIP } from "node:net";
 import { z } from "zod";
 import { AuditError, type ValidatedUrl } from "@/lib/audit/types";
 
-const urlSchema = z.string().trim().min(1).max(2048);
+const auditUrlSchema = z.string().trim().min(1).max(2048);
 
+const blockedHostnameLabels = new Set(["localhost", "local", "internal"]);
 const blockedHostnameSuffixes = [".localhost", ".local", ".internal"];
+const privateTargetMessage =
+  "Local, loopback and private network targets are not allowed.";
 
-export async function validateUrl(input: string): Promise<ValidatedUrl> {
-  const parsedInput = urlSchema.safeParse(input);
+export function validateAuditUrl(input: unknown): string {
+  const parsedInput = auditUrlSchema.safeParse(input);
 
   if (!parsedInput.success) {
-    throw new AuditError("Please enter a valid absolute URL.", 400);
+    throw new AuditError("Please enter a full URL including http:// or https://.", 400);
   }
 
   const candidate = parsedInput.data;
+
+  // We reject protocol-less input instead of auto-prefixing https://.
+  // That keeps the audit request explicit and avoids hidden assumptions about the target.
+  if (!candidate.includes("://")) {
+    throw new AuditError("Please enter a full URL including http:// or https://.", 400);
+  }
 
   let url: URL;
 
   try {
     url = new URL(candidate);
   } catch {
-    throw new AuditError("Please enter a valid absolute URL.", 400);
+    throw new AuditError("Please enter a full URL including http:// or https://.", 400);
   }
 
-  if (!["http:", "https:"].includes(url.protocol)) {
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new AuditError("Only http and https URLs are allowed.", 400);
   }
 
@@ -33,65 +40,43 @@ export async function validateUrl(input: string): Promise<ValidatedUrl> {
     throw new AuditError("Embedded credentials are not allowed in URLs.", 400);
   }
 
-  const hostname = url.hostname.toLowerCase();
+  const hostname = normalizeHostname(url.hostname);
 
   if (isBlockedHostname(hostname)) {
-    throw new AuditError(
-      "Local or private network hosts are not allowed for this audit.",
-      400,
-    );
+    throw new AuditError(privateTargetMessage, 400);
   }
 
-  if (isIP(hostname)) {
-    if (isPrivateIp(hostname)) {
-      throw new AuditError(
-        "Local or private network hosts are not allowed for this audit.",
-        400,
-      );
-    }
-  } else {
-    let records: LookupAddress[];
-
-    try {
-      records = await dns.lookup(hostname, { all: true, verbatim: true });
-    } catch {
-      throw new AuditError(
-        "The hostname could not be resolved from the server environment.",
-        400,
-      );
-    }
-
-    if (records.length === 0) {
-      throw new AuditError("The hostname did not resolve to a public IP.", 400);
-    }
-
-    for (const record of records) {
-      if (isPrivateIp(record.address)) {
-        throw new AuditError(
-          "Local or private network hosts are not allowed for this audit.",
-          400,
-        );
-      }
-    }
+  if (isIP(hostname) && isPrivateOrLoopbackIp(hostname)) {
+    throw new AuditError(privateTargetMessage, 400);
   }
+
+  return url.toString();
+}
+
+export function validateUrl(input: unknown): ValidatedUrl {
+  const normalizedUrl = validateAuditUrl(input);
+  const url = new URL(normalizedUrl);
 
   return {
-    input: candidate,
-    normalizedUrl: url.toString(),
-    hostname,
+    input: String(input).trim(),
+    normalizedUrl,
+    hostname: normalizeHostname(url.hostname),
     url,
   };
 }
 
 function isBlockedHostname(hostname: string) {
   return (
-    hostname === "localhost" ||
-    hostname.endsWith(".localhost") ||
+    blockedHostnameLabels.has(hostname) ||
     blockedHostnameSuffixes.some((suffix) => hostname.endsWith(suffix))
   );
 }
 
-function isPrivateIp(address: string) {
+function normalizeHostname(hostname: string) {
+  return hostname.toLowerCase().replace(/^\[(.*)\]$/, "$1");
+}
+
+function isPrivateOrLoopbackIp(address: string) {
   const family = isIP(address);
 
   if (family === 4) {
@@ -102,18 +87,18 @@ function isPrivateIp(address: string) {
     return isPrivateIpv6(address);
   }
 
-  return true;
+  return false;
 }
 
 function isPrivateIpv4(address: string) {
-  const octets = address.split(".").map(Number);
+  const octets = address.split(".").map((segment) => Number(segment));
   const [first, second] = octets;
 
-  if (octets.some((octet) => Number.isNaN(octet))) {
+  if (octets.length !== 4 || octets.some((segment) => Number.isNaN(segment))) {
     return true;
   }
 
-  if (first === 10 || first === 127 || first === 0) {
+  if (first === 0 || first === 10 || first === 127) {
     return true;
   }
 
@@ -129,10 +114,6 @@ function isPrivateIpv4(address: string) {
     return true;
   }
 
-  if (first === 100 && second >= 64 && second <= 127) {
-    return true;
-  }
-
   return false;
 }
 
@@ -144,7 +125,7 @@ function isPrivateIpv6(address: string) {
   }
 
   if (normalized.startsWith("::ffff:")) {
-    return isPrivateIpv4(normalized.replace("::ffff:", ""));
+    return isPrivateIpv4(normalized.slice("::ffff:".length));
   }
 
   if (normalized.startsWith("fc") || normalized.startsWith("fd")) {

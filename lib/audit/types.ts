@@ -48,6 +48,25 @@ export interface AuditCheck {
   details?: string;
 }
 
+export interface AuditIssue {
+  id: string;
+  label: string;
+  category: AuditCategory;
+  impact: AuditImpact;
+  weight: number;
+  recommendation: string;
+  details?: string;
+}
+
+export interface AuditRecommendation {
+  id: string;
+  label: string;
+  text: string;
+  category: AuditCategory;
+  impact: AuditImpact;
+  sourceCheckId: string;
+}
+
 export interface ValidatedUrl {
   input: string;
   normalizedUrl: string;
@@ -55,10 +74,11 @@ export interface ValidatedUrl {
   url: URL;
 }
 
-export interface PageFetchResult {
-  inputUrl: string;
+export interface FetchPageResult {
+  requestedUrl: string;
   finalUrl: string;
   html: string;
+  statusCode: number;
   status: number;
   contentType: string | null;
   htmlBytes: number;
@@ -66,8 +86,11 @@ export interface PageFetchResult {
   redirectCount: number;
 }
 
+export type PageFetchResult = FetchPageResult;
+
 export interface ParsedHtml {
   $: CheerioAPI;
+  visibleText: string;
   cleanText: string;
   wordCount: number;
   paragraphCount: number;
@@ -75,6 +98,15 @@ export interface ParsedHtml {
 
 export interface SeoBasics {
   title: string | null;
+  description: string | null;
+  h1s: string[];
+  ogTitle: string | null;
+  ogDescription: string | null;
+  internalLinksCount: number;
+  externalLinksCount: number;
+  imagesCount: number;
+  imagesWithAltCount: number;
+  textLength: number;
   titleLength: number;
   metaDescription: string | null;
   metaDescriptionLength: number;
@@ -87,19 +119,28 @@ export interface SeoBasics {
 }
 
 export type JsonLdNode = Record<string, unknown>;
+export type JsonLdBlock = JsonLdNode | JsonLdNode[];
 
-export interface JsonLdExtractionResult {
-  items: JsonLdNode[];
-  invalidBlocks: number;
-  rawBlockCount: number;
-  types: string[];
+export interface InvalidJsonLdBlock {
+  content: string;
+  message: string;
 }
+
+export interface JsonLdParseResult {
+  items: JsonLdNode[];
+  validBlocks: JsonLdBlock[];
+  invalidBlocks: InvalidJsonLdBlock[];
+  invalidBlockCount: number;
+  rawBlockCount: number;
+  schemaTypes: string[];
+}
+
+export type JsonLdExtractionResult = JsonLdParseResult;
 
 export interface StructuredDataSummary {
   rawBlockCount: number;
   validItemCount: number;
   invalidBlockCount: number;
-  types: string[];
 }
 
 export interface FrequentTerm {
@@ -118,7 +159,7 @@ export interface CategoryScore {
   totalChecks: number;
 }
 
-export interface TechnicalSummary {
+export interface TechnicalMetadata {
   status: number;
   contentType: string | null;
   responseTimeMs: number;
@@ -126,19 +167,24 @@ export interface TechnicalSummary {
   redirectCount: number;
 }
 
-export interface AuditResult {
-  inputUrl: string;
-  finalUrl: string;
+export interface AuditMetadata {
   analyzedAt: string;
+  requestedUrl: string;
+  finalUrl: string;
+  technical: TechnicalMetadata;
+  structuredData: StructuredDataSummary;
+}
+
+export interface AuditResult {
+  url: string;
   score: number;
-  categoryBreakdown: CategoryScore[];
-  checks: AuditCheck[];
+  categories: CategoryScore[];
   strongSignals: AuditCheck[];
   weakSignals: AuditCheck[];
-  issues: AuditCheck[];
-  recommendations: string[];
+  issues: AuditIssue[];
+  recommendations: AuditRecommendation[];
   frequentTerms: FrequentTerm[];
-  schemaSummary: StructuredDataSummary;
-  seoBasics: SeoBasics;
-  technical: TechnicalSummary;
+  schemaTypes: string[];
+  metadata: AuditMetadata;
+  checks: AuditCheck[];
 }

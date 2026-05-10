@@ -1,97 +1,101 @@
-import { AuditError, type PageFetchResult, type ValidatedUrl } from "@/lib/audit/types";
+import { AuditError, type FetchPageResult, type ValidatedUrl } from "@/lib/audit/types";
 import { validateUrl } from "@/lib/audit/validateUrl";
 
-const REQUEST_TIMEOUT_MS = 10_000;
+const DEFAULT_TIMEOUT_MS = 8_000;
+const MAX_HTML_BYTES = 1_000_000;
 const MAX_REDIRECTS = 3;
-const MAX_HTML_BYTES = 2_000_000;
+const HTML_ACCEPT_HEADER = "text/html,application/xhtml+xml";
+const USER_AGENT = "AI-Visibility-Audit/1.0";
 
-export async function fetchPage(
-  validatedUrl: ValidatedUrl,
-): Promise<PageFetchResult> {
+export async function fetchPageHtml(url: string): Promise<FetchPageResult> {
+  const validatedUrl = validateUrl(url);
   const startedAt = Date.now();
-  let currentUrl = validatedUrl.url.toString();
+  let currentUrl = validatedUrl.normalizedUrl;
   let redirectCount = 0;
 
   while (true) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-    let response: Response;
+    const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
     try {
-      response = await fetch(currentUrl, {
+      const response = await fetch(currentUrl, {
         method: "GET",
         redirect: "manual",
-        signal: controller.signal,
         cache: "no-store",
+        signal: controller.signal,
         headers: {
-          Accept: "text/html,application/xhtml+xml",
-          "User-Agent": "AI-Visibility-Readiness-Audit/0.1",
+          Accept: HTML_ACCEPT_HEADER,
+          "User-Agent": USER_AGENT,
         },
       });
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new AuditError("The page request timed out.", 504);
+
+      if (isRedirect(response.status)) {
+        if (redirectCount >= MAX_REDIRECTS) {
+          throw new AuditError("Too many redirects prevented the audit.", 400);
+        }
+
+        const location = response.headers.get("location");
+
+        if (!location) {
+          throw new AuditError("The page redirected without a valid location.", 400);
+        }
+
+        const nextUrl = new URL(location, currentUrl);
+        currentUrl = validateUrl(nextUrl.toString()).normalizedUrl;
+        redirectCount += 1;
+        continue;
       }
 
-      throw new AuditError("The page could not be fetched.", 502);
+      if (!response.ok) {
+        throw new AuditError(`The page returned HTTP ${response.status}.`, response.status);
+      }
+
+      const contentType = response.headers.get("content-type");
+
+      if (!contentType || !isHtmlContentType(contentType)) {
+        throw new AuditError("Only HTML responses can be audited.", 415);
+      }
+
+      const contentLength = response.headers.get("content-length");
+
+      if (contentLength && Number(contentLength) > MAX_HTML_BYTES) {
+        throw new AuditError("The HTML response exceeded the 1 MB limit.", 413);
+      }
+
+      const html = await readHtmlWithLimit(response, MAX_HTML_BYTES);
+      const htmlBytes = Buffer.byteLength(html, "utf8");
+      const finalUrl = response.url || currentUrl;
+      const responseTimeMs = Date.now() - startedAt;
+
+      return {
+        requestedUrl: validatedUrl.normalizedUrl,
+        finalUrl,
+        html,
+        statusCode: response.status,
+        status: response.status,
+        contentType,
+        htmlBytes,
+        responseTimeMs,
+        redirectCount,
+      };
+    } catch (error) {
+      if (error instanceof AuditError) {
+        throw error;
+      }
+
+      if (isAbortError(error)) {
+        throw new AuditError("The request timed out while fetching the page.", 504);
+      }
+
+      throw new AuditError("The website could not be reached.", 502);
     } finally {
       clearTimeout(timeout);
     }
-
-    if (isRedirect(response.status)) {
-      if (redirectCount >= MAX_REDIRECTS) {
-        throw new AuditError("Too many redirects prevented the audit.", 400);
-      }
-
-      const location = response.headers.get("location");
-
-      if (!location) {
-        throw new AuditError("The page redirected without a valid location.", 400);
-      }
-
-      const nextUrl = new URL(location, currentUrl);
-      const validatedRedirect = await validateUrl(nextUrl.toString());
-      currentUrl = validatedRedirect.url.toString();
-      redirectCount += 1;
-      continue;
-    }
-
-    if (!response.ok) {
-      throw new AuditError(
-        `The page returned HTTP ${response.status} and could not be audited.`,
-        502,
-      );
-    }
-
-    const contentType = response.headers.get("content-type");
-
-    if (!contentType || !/text\/html|application\/xhtml\+xml/i.test(contentType)) {
-      throw new AuditError("Only HTML documents can be audited.", 415);
-    }
-
-    const contentLength = response.headers.get("content-length");
-
-    if (contentLength && Number(contentLength) > MAX_HTML_BYTES) {
-      throw new AuditError(
-        "The page is too large for the MVP audit size limit.",
-        413,
-      );
-    }
-
-    const html = await readHtmlWithLimit(response, MAX_HTML_BYTES);
-
-    return {
-      inputUrl: validatedUrl.normalizedUrl,
-      finalUrl: response.url || currentUrl,
-      html,
-      status: response.status,
-      contentType,
-      htmlBytes: Buffer.byteLength(html, "utf8"),
-      responseTimeMs: Date.now() - startedAt,
-      redirectCount,
-    };
   }
+}
+
+export async function fetchPage(validatedUrl: ValidatedUrl): Promise<FetchPageResult> {
+  return fetchPageHtml(validatedUrl.normalizedUrl);
 }
 
 async function readHtmlWithLimit(response: Response, maxBytes: number) {
@@ -101,14 +105,14 @@ async function readHtmlWithLimit(response: Response, maxBytes: number) {
     const html = await response.text();
 
     if (Buffer.byteLength(html, "utf8") > maxBytes) {
-      throw new AuditError("The page is too large for the MVP audit size limit.", 413);
+      throw new AuditError("The HTML response exceeded the 1 MB limit.", 413);
     }
 
     return html;
   }
 
   const chunks: Uint8Array[] = [];
-  let receivedBytes = 0;
+  let totalLength = 0;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -121,19 +125,19 @@ async function readHtmlWithLimit(response: Response, maxBytes: number) {
       continue;
     }
 
-    receivedBytes += value.byteLength;
+    totalLength += value.byteLength;
 
-    if (receivedBytes > maxBytes) {
-      throw new AuditError("The page is too large for the MVP audit size limit.", 413);
+    if (totalLength > maxBytes) {
+      throw new AuditError("The HTML response exceeded the 1 MB limit.", 413);
     }
 
     chunks.push(value);
   }
 
-  return new TextDecoder().decode(mergeChunks(chunks, receivedBytes));
+  return new TextDecoder().decode(joinChunks(chunks, totalLength));
 }
 
-function mergeChunks(chunks: Uint8Array[], totalLength: number) {
+function joinChunks(chunks: Uint8Array[], totalLength: number) {
   const merged = new Uint8Array(totalLength);
   let offset = 0;
 
@@ -145,6 +149,20 @@ function mergeChunks(chunks: Uint8Array[], totalLength: number) {
   return merged;
 }
 
+function isHtmlContentType(contentType: string) {
+  return /text\/html|application\/xhtml\+xml/i.test(contentType);
+}
+
 function isRedirect(status: number) {
   return [301, 302, 303, 307, 308].includes(status);
+}
+
+function isAbortError(error: unknown) {
+  return (
+    (error instanceof Error && error.name === "AbortError") ||
+    (typeof error === "object" &&
+      error !== null &&
+      "name" in error &&
+      error.name === "AbortError")
+  );
 }

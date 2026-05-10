@@ -5,17 +5,18 @@ export function parseHtml(html: string): ParsedHtml {
   const $ = load(html);
   const sanitized = load(html);
 
-  sanitized("script, style, noscript, svg").remove();
+  sanitized("script, style, noscript").remove();
 
-  const cleanText = sanitized("body").text().replace(/\s+/g, " ").trim();
+  const visibleText = sanitized("body").text().replace(/\s+/g, " ").trim();
   const paragraphCount = sanitized("p")
     .toArray()
     .filter((element) => sanitized(element).text().trim().length > 0).length;
-  const wordCount = cleanText.length > 0 ? cleanText.split(/\s+/).length : 0;
+  const wordCount = visibleText.length > 0 ? visibleText.split(/\s+/).length : 0;
 
   return {
     $,
-    cleanText,
+    visibleText,
+    cleanText: visibleText,
     wordCount,
     paragraphCount,
   };
