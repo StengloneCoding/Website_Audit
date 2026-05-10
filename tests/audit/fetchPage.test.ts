@@ -122,7 +122,7 @@ describe("fetchPageHtml", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(fetchPageHtml("https://example.com/large")).rejects.toThrow(
-      "Die HTML-Antwort hat das 1-MB-Limit überschritten.",
+      "Die HTML-Antwort hat das 5-MB-Limit überschritten.",
     );
   });
 

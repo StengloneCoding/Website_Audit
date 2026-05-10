@@ -6,7 +6,7 @@ import {
 import { validateUrl } from "@/lib/audit/validateUrl";
 
 const DEFAULT_TIMEOUT_MS = 8_000;
-const MAX_HTML_BYTES = 1_000_000;
+const MAX_HTML_BYTES = 5_000_000;
 const MAX_REDIRECTS = 3;
 const HTML_ACCEPT_HEADER = "text/html,application/xhtml+xml";
 const USER_AGENT = "AI-Visibility-Audit/1.0";
@@ -76,7 +76,7 @@ export async function fetchPageHtml(url: string): Promise<FetchPageResult> {
 
       if (contentLength && Number(contentLength) > MAX_HTML_BYTES) {
         throw new AuditError(
-          "Die HTML-Antwort hat das 1-MB-Limit überschritten.",
+          "Die HTML-Antwort hat das 5-MB-Limit überschritten.",
           413,
         );
       }
@@ -130,7 +130,7 @@ async function readHtmlWithLimit(response: Response, maxBytes: number) {
 
     if (Buffer.byteLength(html, "utf8") > maxBytes) {
       throw new AuditError(
-        "Die HTML-Antwort hat das 1-MB-Limit überschritten.",
+        "Die HTML-Antwort hat das 5-MB-Limit überschritten.",
         413,
       );
     }
@@ -156,7 +156,7 @@ async function readHtmlWithLimit(response: Response, maxBytes: number) {
 
     if (totalLength > maxBytes) {
       throw new AuditError(
-        "Die HTML-Antwort hat das 1-MB-Limit überschritten.",
+        "Die HTML-Antwort hat das 5-MB-Limit überschritten.",
         413,
       );
     }
