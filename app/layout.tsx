@@ -14,9 +14,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Visibility Readiness Audit",
+  title: "KI-Readiness-Sichtbarkeits-Audit",
   description:
-    "Fast website audit for technical and semantic signals that improve machine readability for search engines and AI systems.",
+    "Schnelles Website-Audit für technische und semantische Signale, die die maschinenlesbare Verständlichkeit für Suchmaschinen und KI-Systeme verbessern.",
 };
 
 export default function RootLayout({
@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="de"
       className={`${manrope.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

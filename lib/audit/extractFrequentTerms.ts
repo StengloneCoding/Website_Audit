@@ -44,7 +44,6 @@ const STOPWORDS = new Set([
   "eure",
   "for",
   "from",
-  "fuer",
   "für",
   "habt",
   "have",
@@ -165,8 +164,6 @@ function tokenize(text: string) {
     .map((token) => token.trim())
     .filter(
       (token) =>
-        token.length >= 4 &&
-        !STOPWORDS.has(token) &&
-        !/^\d+$/.test(token),
+        token.length >= 4 && !STOPWORDS.has(token) && !/^\d+$/.test(token),
     );
 }

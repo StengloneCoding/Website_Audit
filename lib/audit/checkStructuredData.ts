@@ -6,7 +6,7 @@ import type {
 } from "@/lib/audit/types";
 
 const fallbackSchemaRecommendation =
-  "Add JSON-LD schema to clarify the business entity, services, location and page purpose.";
+  "Ergänze JSON-LD-Schema, um Unternehmensentität, Leistungen, Standort und Seitenzweck klarer zu machen.";
 
 export function checkStructuredData(
   jsonLd: JsonLdParseResult,
@@ -16,7 +16,8 @@ export function checkStructuredData(
   summary: StructuredDataSummary;
 } {
   const hasSchema = jsonLd.rawBlockCount > 0;
-  const hasValidJsonLd = jsonLd.validBlocks.length > 0 && jsonLd.invalidBlockCount === 0;
+  const hasValidJsonLd =
+    jsonLd.validBlocks.length > 0 && jsonLd.invalidBlockCount === 0;
   const hasOrganizationOrLocalBusiness = hasAnyType(jsonLd.schemaTypes, [
     "Organization",
     "LocalBusiness",
@@ -29,7 +30,7 @@ export function checkStructuredData(
   const checks: AuditCheck[] = [
     {
       id: "structured-jsonld-present",
-      label: "JSON-LD is present",
+      label: "JSON-LD ist vorhanden",
       passed: hasSchema,
       weight: 4,
       category: "structuredData",
@@ -37,79 +38,74 @@ export function checkStructuredData(
       recommendation: fallbackSchemaRecommendation,
       details:
         jsonLd.rawBlockCount > 0
-          ? `Detected ${jsonLd.rawBlockCount} JSON-LD block(s).`
+          ? `${jsonLd.rawBlockCount} JSON-LD-Block/Blöcke erkannt.`
           : undefined,
     },
     {
       id: "structured-jsonld-valid",
-      label: "JSON-LD is parseable",
+      label: "JSON-LD ist parsebar",
       passed: hasValidJsonLd,
       weight: 3,
       category: "structuredData",
       impact: "high",
-      recommendation:
-        hasSchema
-          ? "Fix invalid JSON-LD blocks so the declared schema can be parsed consistently."
-          : fallbackSchemaRecommendation,
+      recommendation: hasSchema
+        ? "Behebe ungültige JSON-LD-Blöcke, damit das deklarierte Schema konsistent geparst werden kann."
+        : fallbackSchemaRecommendation,
       details:
         jsonLd.invalidBlockCount > 0
-          ? `${jsonLd.invalidBlockCount} block(s) could not be parsed.`
+          ? `${jsonLd.invalidBlockCount} Block/Blöcke konnten nicht geparst werden.`
           : undefined,
     },
     {
       id: "structured-organization-or-local-business",
-      label: "Organization or LocalBusiness schema is present",
+      label: "Organization- oder LocalBusiness-Schema ist vorhanden",
       passed: hasOrganizationOrLocalBusiness,
       weight: 3,
       category: "structuredData",
       impact: "high",
-      recommendation:
-        hasSchema
-          ? "Add Organization or LocalBusiness schema to clarify the primary business entity."
-          : fallbackSchemaRecommendation,
+      recommendation: hasSchema
+        ? "Ergänze Organization- oder LocalBusiness-Schema, um die primäre Unternehmensentität klarzustellen."
+        : fallbackSchemaRecommendation,
       details:
         jsonLd.schemaTypes.length > 0
-          ? `Detected types: ${jsonLd.schemaTypes.join(", ")}`
+          ? `Erkannte Typen: ${jsonLd.schemaTypes.join(", ")}`
           : undefined,
     },
     {
       id: "structured-website",
-      label: "WebSite schema is present",
+      label: "WebSite-Schema ist vorhanden",
       passed: hasWebSite,
       weight: 2,
       category: "structuredData",
       impact: "medium",
-      recommendation:
-        hasSchema
-          ? "Add WebSite schema to describe the overall site context in machine-readable form."
-          : fallbackSchemaRecommendation,
+      recommendation: hasSchema
+        ? "Ergänze WebSite-Schema, um den übergreifenden Seitenkontext maschinenlesbar zu beschreiben."
+        : fallbackSchemaRecommendation,
     },
     {
       id: "structured-service",
-      label: "Service schema is present",
+      label: "Service-Schema ist vorhanden",
       passed: hasService,
       weight: 2,
       category: "structuredData",
       impact: "medium",
-      recommendation:
-        hasSchema
-          ? "Add Service schema to describe the main offer and its business relevance."
-          : fallbackSchemaRecommendation,
+      recommendation: hasSchema
+        ? "Ergänze Service-Schema, um das Hauptangebot und seine geschäftliche Relevanz zu beschreiben."
+        : fallbackSchemaRecommendation,
     },
   ];
 
   if (faqRelevant) {
     checks.push({
       id: "structured-faqpage",
-      label: "Visible FAQ content is backed by FAQPage schema",
+      label: "Sichtbarer FAQ-Inhalt ist mit FAQPage-Schema hinterlegt",
       passed: hasFaqPage,
       weight: 1,
       category: "structuredData",
       impact: "low",
-      recommendation:
-        hasSchema
-          ? "Add FAQPage schema for visible FAQ sections so questions and answers become machine-readable."
-          : fallbackSchemaRecommendation,
+      recommendation: hasSchema
+        ? "Ergänze FAQPage-Schema für sichtbare FAQ-Abschnitte, damit Fragen und Antworten maschinenlesbar werden."
+        : fallbackSchemaRecommendation,
     });
   }
 
@@ -124,7 +120,9 @@ export function checkStructuredData(
 }
 
 function hasAnyType(schemaTypes: string[], expectedTypes: string[]) {
-  return expectedTypes.some((expectedType) => schemaTypes.includes(expectedType));
+  return expectedTypes.some((expectedType) =>
+    schemaTypes.includes(expectedType),
+  );
 }
 
 function hasFaqContent(parsed: ParsedHtml) {

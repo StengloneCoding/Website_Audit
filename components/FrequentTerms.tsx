@@ -12,14 +12,14 @@ export function FrequentTerms({ terms }: FrequentTermsProps) {
     <article className="panel p-6 md:p-7">
       <div className="space-y-2">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-500">
-          Keyword signals
+          Begriffssignale
         </p>
         <h2 className="text-2xl font-semibold text-slate-950">
-          Frequent terms on the page
+          Häufige Begriffe auf der Seite
         </h2>
         <p className="text-sm leading-7 text-slate-600">
-          These terms help surface repeated topic signals in the visible body
-          copy.
+          Diese Begriffe machen wiederkehrende Themensignale im sichtbaren
+          Seitentext sichtbar.
         </p>
       </div>
 
@@ -39,7 +39,7 @@ export function FrequentTerms({ terms }: FrequentTermsProps) {
           ))
         ) : (
           <div className="rounded-2xl border border-slate-900/8 bg-white/85 p-4 text-sm text-slate-600">
-            Not enough text was found to extract recurring term signals.
+            Es wurde nicht genug Text gefunden, um wiederkehrende Begriffssignale zu extrahieren.
           </div>
         )}
       </div>

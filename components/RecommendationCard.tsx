@@ -17,6 +17,12 @@ const impactClasses: Record<AuditImpact, string> = {
   high: "bg-red-100 text-red-900",
 };
 
+const impactLabels: Record<AuditImpact, string> = {
+  low: "Niedrige",
+  medium: "Mittlere",
+  high: "Hohe",
+};
+
 export function RecommendationCard({
   recommendations,
 }: RecommendationCardProps) {
@@ -24,10 +30,10 @@ export function RecommendationCard({
     <article className="panel p-6 md:p-7">
       <div className="space-y-2">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-500">
-          Recommendations
+          Empfehlungen
         </p>
         <h2 className="text-2xl font-semibold text-slate-950">
-          Next actions for the page
+          Nächste Schritte für die Seite
         </h2>
       </div>
 
@@ -48,7 +54,7 @@ export function RecommendationCard({
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold ${impactClasses[recommendation.impact]}`}
                   >
-                    {recommendation.impact} impact
+                    {impactLabels[recommendation.impact]} Wirkung
                   </span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                     {CATEGORY_LABELS[recommendation.category]}
@@ -62,7 +68,7 @@ export function RecommendationCard({
           ))
         ) : (
           <div className="rounded-2xl border border-slate-900/8 bg-white/85 p-4 text-sm text-slate-600">
-            No recommendations available.
+            Keine Empfehlungen verfügbar.
           </div>
         )}
       </div>

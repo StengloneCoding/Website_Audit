@@ -17,15 +17,21 @@ const impactClasses: Record<AuditImpact, string> = {
   high: "bg-red-100 text-red-900",
 };
 
+const impactLabels: Record<AuditImpact, string> = {
+  low: "Niedrige",
+  medium: "Mittlere",
+  high: "Hohe",
+};
+
 export function IssueList({ issues }: IssueListProps) {
   return (
     <article className="panel p-6 md:p-7">
       <div className="space-y-2">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-500">
-          Found issues
+          Gefundene Probleme
         </p>
         <h2 className="text-2xl font-semibold text-slate-950">
-          Highest-priority blockers
+          Blocker mit höchster Priorität
         </h2>
       </div>
 
@@ -46,7 +52,7 @@ export function IssueList({ issues }: IssueListProps) {
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${impactClasses[issue.impact]}`}
                     >
-                      {issue.impact} impact
+                      {impactLabels[issue.impact]} Wirkung
                     </span>
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                       {CATEGORY_LABELS[issue.category]}
@@ -66,7 +72,7 @@ export function IssueList({ issues }: IssueListProps) {
           ))
         ) : (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm leading-7 text-emerald-900">
-            No critical blockers were found in the current audit snapshot.
+            Im aktuellen Audit-Snapshot wurden keine kritischen Blocker gefunden.
           </div>
         )}
       </div>

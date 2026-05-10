@@ -19,8 +19,12 @@ export function extractSeoBasics(parsed: ParsedHtml): {
     .filter(Boolean);
   const h2Count = parsed.$("h2").length;
   const links = parsed.$("a[href]").toArray();
-  const internalLinksCount = links.filter((link) => isInternalLink(parsed.$(link).attr("href"))).length;
-  const externalLinksCount = links.filter((link) => isExternalLink(parsed.$(link).attr("href"))).length;
+  const internalLinksCount = links.filter((link) =>
+    isInternalLink(parsed.$(link).attr("href")),
+  ).length;
+  const externalLinksCount = links.filter((link) =>
+    isExternalLink(parsed.$(link).attr("href")),
+  ).length;
   const images = parsed.$("img").toArray();
   const imagesCount = images.length;
   const imagesWithAltCount = images.filter((image) => {
@@ -57,107 +61,111 @@ export function extractSeoBasics(parsed: ParsedHtml): {
   const checks: AuditCheck[] = [
     {
       id: "seo-title-present",
-      label: "Title tag is present",
+      label: "Ein Title-Tag ist vorhanden",
       passed: Boolean(title),
       weight: 5,
       category: "seoBasics",
       impact: "high",
       recommendation:
-        "Add a unique title tag that clearly explains the page topic and business context.",
-      details: title ? `Detected title: ${title}` : undefined,
+        "Ergänze ein eindeutiges Title-Tag, das Seitenthema und Geschäftskontext klar beschreibt.",
+      details: title ? `Erkannter Titel: ${title}` : undefined,
     },
     {
       id: "seo-title-length",
-      label: "Title length is within a useful range",
+      label: "Die Titellänge liegt in einem sinnvollen Bereich",
       passed: Boolean(title && title.length >= 15 && title.length <= 65),
       weight: 4,
       category: "seoBasics",
       impact: "medium",
       recommendation:
-        "Keep the title concise but descriptive, ideally somewhere between 15 and 65 characters.",
-      details: title ? `Current length: ${title.length} characters.` : undefined,
+        "Halte den Titel kurz und beschreibend, idealerweise zwischen 15 und 65 Zeichen.",
+      details: title ? `Aktuelle Länge: ${title.length} Zeichen.` : undefined,
     },
     {
       id: "seo-description-present",
-      label: "Meta description is present",
+      label: "Eine Meta-Description ist vorhanden",
       passed: Boolean(description),
       weight: 4,
       category: "seoBasics",
       impact: "high",
       recommendation:
-        "Add a meta description that summarizes the page in a clear, machine-readable way.",
+        "Ergänze eine Meta-Description, die die Seite klar und maschinenlesbar zusammenfasst.",
       details: description
-        ? `Current length: ${description.length} characters.`
+        ? `Aktuelle Länge: ${description.length} Zeichen.`
         : undefined,
     },
     {
       id: "seo-h1-present",
-      label: "At least one H1 is present",
+      label: "Mindestens eine H1 ist vorhanden",
       passed: h1s.length > 0,
       weight: 4,
       category: "seoBasics",
       impact: "medium",
       recommendation:
-        "Add a visible H1 heading that states the main topic or offer of the page.",
-      details: h1s.length > 0 ? `Detected ${h1s.length} H1 heading(s).` : undefined,
+        "Ergänze eine sichtbare H1-Überschrift, die Hauptthema oder Angebot der Seite benennt.",
+      details:
+        h1s.length > 0
+          ? `${h1s.length} H1-Überschrift(en) erkannt.`
+          : undefined,
     },
     {
       id: "seo-canonical-present",
-      label: "Canonical URL is declared",
+      label: "Eine Canonical-URL ist gesetzt",
       passed: Boolean(canonical),
       weight: 4,
       category: "seoBasics",
       impact: "medium",
       recommendation:
-        "Add a canonical link to clarify the preferred page URL for crawlers and AI systems.",
-      details: canonical ? `Detected canonical: ${canonical}` : undefined,
+        "Setze einen Canonical-Link, um die bevorzugte Seiten-URL für Crawler und KI-Systeme klarzustellen.",
+      details: canonical ? `Canonical erkannt: ${canonical}` : undefined,
     },
     {
       id: "seo-noindex-not-set",
-      label: "Robots meta does not block indexing",
+      label: "Robots-Meta blockiert die Indexierung nicht",
       passed: !hasNoindex,
       weight: 4,
       category: "seoBasics",
       impact: "high",
       recommendation:
-        "Remove noindex from the robots meta tag if this page should remain discoverable.",
-      details: robots ? `Detected robots directive: ${robots}` : undefined,
+        "Entferne noindex aus dem Robots-Meta-Tag, wenn diese Seite auffindbar bleiben soll.",
+      details: robots ? `Erkannte Robots-Direktive: ${robots}` : undefined,
     },
     {
       id: "technical-text-sufficient",
-      label: "Page contains enough visible text",
+      label: "Die Seite enthält genug sichtbaren Text",
       passed: textLength >= 200,
       weight: 4,
       category: "technicalAccessibility",
       impact: "medium",
       recommendation:
-        "Add more visible copy so machines can infer the page topic, offer and surrounding context.",
-      details: `Visible text length: ${textLength} characters.`,
+        "Ergänze mehr sichtbaren Text, damit Maschinen Seitenthema, Angebot und Kontext besser ableiten können.",
+      details: `Sichtbare Textlänge: ${textLength} Zeichen.`,
     },
     {
       id: "technical-images-have-alt",
-      label: "Images include alt text where relevant",
-      passed: imagesCount === 0 || imagesWithAltCount >= Math.ceil(imagesCount / 2),
+      label: "Bilder enthalten, wo sinnvoll, Alt-Texte",
+      passed:
+        imagesCount === 0 || imagesWithAltCount >= Math.ceil(imagesCount / 2),
       weight: 3,
       category: "technicalAccessibility",
       impact: "medium",
       recommendation:
-        "Add alt text to informative images so their context remains understandable beyond the pixels.",
+        "Ergänze Alt-Texte bei informativen Bildern, damit ihr Kontext auch ohne Bildinhalt verständlich bleibt.",
       details:
         imagesCount > 0
-          ? `${imagesWithAltCount} of ${imagesCount} image(s) include alt text.`
-          : "No images were detected on the page.",
+          ? `${imagesWithAltCount} von ${imagesCount} Bild(ern) enthalten Alt-Text.`
+          : "Auf der Seite wurden keine Bilder erkannt.",
     },
     {
       id: "technical-internal-links-present",
-      label: "Page includes internal links",
+      label: "Die Seite enthält interne Links",
       passed: internalLinksCount > 0,
       weight: 3,
       category: "technicalAccessibility",
       impact: "low",
       recommendation:
-        "Link to related internal pages so crawlers and models can follow the surrounding site context.",
-      details: `Detected ${internalLinksCount} internal link(s).`,
+        "Verlinke auf relevante interne Seiten, damit Crawler und Modelle den umgebenden Website-Kontext verfolgen können.",
+      details: `${internalLinksCount} interne(s) Link(s) erkannt.`,
     },
   ];
 
@@ -178,7 +186,8 @@ function getMetaContent(parsed: ParsedHtml, name: string) {
 }
 
 function getMetaProperty(parsed: ParsedHtml, property: string) {
-  const value = parsed.$(`meta[property="${property}"]`).attr("content")?.trim() ?? "";
+  const value =
+    parsed.$(`meta[property="${property}"]`).attr("content")?.trim() ?? "";
   return value.length > 0 ? value : null;
 }
 

@@ -4,7 +4,7 @@ import { extractFrequentTerms } from "@/lib/audit/extractFrequentTerms";
 describe("extractFrequentTerms", () => {
   it("removes german and english stopwords", () => {
     const terms = extractFrequentTerms(
-      "The audit and the strategy for the website. Der Audit und die Strategie fuer die Website.",
+      "The audit and the strategy for the website. Der Audit und die Strategie für die Website.",
     );
 
     expect(terms.map((term) => term.term)).toEqual([
@@ -15,7 +15,7 @@ describe("extractFrequentTerms", () => {
     ]);
     expect(terms.some((term) => term.term === "the")).toBe(false);
     expect(terms.some((term) => term.term === "und")).toBe(false);
-    expect(terms.some((term) => term.term === "fuer")).toBe(false);
+    expect(terms.some((term) => term.term === "für")).toBe(false);
   });
 
   it("ignores tokens shorter than four characters", () => {
@@ -26,7 +26,9 @@ describe("extractFrequentTerms", () => {
   });
 
   it("counts frequencies correctly", () => {
-    const terms = extractFrequentTerms("audit audit signal service service service");
+    const terms = extractFrequentTerms(
+      "audit audit signal service service service",
+    );
 
     expect(terms[0]).toMatchObject({ term: "service", count: 3 });
     expect(terms[1]).toMatchObject({ term: "audit", count: 2 });
@@ -36,7 +38,10 @@ describe("extractFrequentTerms", () => {
   it("returns the top 20 terms and keeps first-seen order on equal frequency", () => {
     const orderedTerms = extractFrequentTerms("zebra alpha mango delta");
     const manyTerms = extractFrequentTerms(
-      Array.from({ length: 25 }, (_, index) => `term${String(index + 1).padStart(2, "0")}`).join(" "),
+      Array.from(
+        { length: 25 },
+        (_, index) => `term${String(index + 1).padStart(2, "0")}`,
+      ).join(" "),
     );
 
     expect(orderedTerms.map((term) => term.term)).toEqual([

@@ -10,14 +10,14 @@ interface ScoreCardProps {
 
 function getScoreLabel(score: number) {
   if (score >= 80) {
-    return "Strong readiness";
+    return "Hohe Readiness";
   }
 
   if (score >= 60) {
-    return "Promising baseline";
+    return "Gute Ausgangsbasis";
   }
 
-  return "Needs improvement";
+  return "Verbesserung nötig";
 }
 
 export function ScoreCard({
@@ -30,16 +30,16 @@ export function ScoreCard({
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div className="space-y-3">
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-500">
-            AI Visibility Readiness
+            KI-Readiness für Sichtbarkeit
           </p>
           <div>
             <h2 className="text-3xl font-semibold text-slate-950 md:text-4xl">
               {getScoreLabel(score)}
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-7 text-slate-600">
-              This score summarizes technical, semantic and structured signals
-              that improve website readability for search engines and AI
-              systems.
+              Dieser Score fasst technische, semantische und strukturierte
+              Signale zusammen, die die Lesbarkeit einer Website für
+              Suchmaschinen und KI-Systeme verbessern.
             </p>
           </div>
         </div>
@@ -58,14 +58,14 @@ export function ScoreCard({
         <div className="rounded-2xl border border-slate-900/8 bg-white/80 p-4">
           <div className="flex items-center gap-2 text-slate-500">
             <Globe className="h-4 w-4" />
-            Audited URL
+            Geprüfte URL
           </div>
           <p className="mt-2 break-all font-medium text-slate-900">{url}</p>
         </div>
         <div className="rounded-2xl border border-slate-900/8 bg-white/80 p-4">
           <div className="flex items-center gap-2 text-slate-500">
             <CalendarClock className="h-4 w-4" />
-            Analyzed
+            Analysiert am
           </div>
           <p className="mt-2 font-medium text-slate-900">
             {new Date(analyzedAt).toLocaleString()}
@@ -74,10 +74,10 @@ export function ScoreCard({
         <div className="rounded-2xl border border-slate-900/8 bg-white/80 p-4">
           <div className="flex items-center gap-2 text-slate-500">
             <ShieldCheck className="h-4 w-4" />
-            Scope
+            Fokus
           </div>
           <p className="mt-2 font-medium text-slate-900">
-            Readiness signals, not rankings
+            Readiness-Signale, keine Rankings
           </p>
         </div>
       </div>

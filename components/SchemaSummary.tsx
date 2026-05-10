@@ -13,10 +13,10 @@ export function SchemaSummary({ summary, schemaTypes }: SchemaSummaryProps) {
     <article className="panel p-6 md:p-7">
       <div className="space-y-2">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-500">
-          Schema summary
+          Schema-Übersicht
         </p>
         <h2 className="text-2xl font-semibold text-slate-950">
-          Structured data snapshot
+          Snapshot strukturierter Daten
         </h2>
       </div>
 
@@ -24,7 +24,7 @@ export function SchemaSummary({ summary, schemaTypes }: SchemaSummaryProps) {
         <div className="rounded-2xl border border-slate-900/8 bg-white/85 p-4">
           <div className="flex items-center gap-2 text-slate-500">
             <Braces className="h-4 w-4" />
-            JSON-LD blocks
+            JSON-LD-Blöcke
           </div>
           <p className="mt-2 text-2xl font-semibold text-slate-950">
             {summary.rawBlockCount}
@@ -33,7 +33,7 @@ export function SchemaSummary({ summary, schemaTypes }: SchemaSummaryProps) {
         <div className="rounded-2xl border border-slate-900/8 bg-white/85 p-4">
           <div className="flex items-center gap-2 text-slate-500">
             <Database className="h-4 w-4" />
-            Valid items
+            Gültige Einträge
           </div>
           <p className="mt-2 text-2xl font-semibold text-slate-950">
             {summary.validItemCount}
@@ -42,7 +42,7 @@ export function SchemaSummary({ summary, schemaTypes }: SchemaSummaryProps) {
         <div className="rounded-2xl border border-slate-900/8 bg-white/85 p-4">
           <div className="flex items-center gap-2 text-slate-500">
             <Database className="h-4 w-4" />
-            Invalid blocks
+            Ungültige Blöcke
           </div>
           <p className="mt-2 text-2xl font-semibold text-slate-950">
             {summary.invalidBlockCount}
@@ -51,7 +51,7 @@ export function SchemaSummary({ summary, schemaTypes }: SchemaSummaryProps) {
       </div>
 
       <div className="mt-6 rounded-2xl border border-slate-900/8 bg-white/85 p-4">
-        <p className="text-sm font-medium text-slate-900">Detected schema types</p>
+        <p className="text-sm font-medium text-slate-900">Erkannte Schema-Typen</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {schemaTypes.length > 0 ? (
             schemaTypes.map((type) => (
@@ -64,7 +64,7 @@ export function SchemaSummary({ summary, schemaTypes }: SchemaSummaryProps) {
             ))
           ) : (
             <p className="text-sm leading-7 text-slate-600">
-              No parseable schema.org types were detected.
+              Es wurden keine parsebaren schema.org-Typen erkannt.
             </p>
           )}
         </div>

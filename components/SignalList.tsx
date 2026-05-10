@@ -20,6 +20,12 @@ const impactClasses: Record<AuditImpact, string> = {
   high: "bg-red-100 text-red-900",
 };
 
+const impactLabels: Record<AuditImpact, string> = {
+  low: "Niedrige",
+  medium: "Mittlere",
+  high: "Hohe",
+};
+
 export function SignalList({
   title,
   subtitle,
@@ -61,7 +67,7 @@ export function SignalList({
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${impactClasses[check.impact]}`}
                     >
-                      {check.impact} impact
+                      {impactLabels[check.impact]} Wirkung
                     </span>
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                       {CATEGORY_LABELS[check.category]}
@@ -81,7 +87,7 @@ export function SignalList({
           ))
         ) : (
           <div className="rounded-2xl border border-slate-900/8 bg-white/80 p-4 text-sm text-slate-600">
-            No signals available yet.
+            Noch keine Signale verfügbar.
           </div>
         )}
       </div>

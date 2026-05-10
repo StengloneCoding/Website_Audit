@@ -20,11 +20,11 @@ export const CATEGORY_ORDER: AuditCategory[] = [
 ];
 
 export const CATEGORY_LABELS: Record<AuditCategory, string> = {
-  seoBasics: "SEO Basics",
-  contentClarity: "Content Clarity",
-  entitySignals: "Entity Signals",
-  structuredData: "Structured Data",
-  technicalAccessibility: "Technical Accessibility",
+  seoBasics: "SEO-Basics",
+  contentClarity: "Inhaltsklarheit",
+  entitySignals: "Entitätssignale",
+  structuredData: "Strukturierte Daten",
+  technicalAccessibility: "Technische Zugänglichkeit",
 };
 
 export class AuditError extends Error {

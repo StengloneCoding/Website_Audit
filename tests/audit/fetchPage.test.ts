@@ -58,7 +58,7 @@ describe("fetchPageHtml", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(fetchPageHtml("https://example.com")).rejects.toThrow(
-      "Only HTML responses can be audited.",
+      "Es können nur HTML-Antworten auditiert werden.",
     );
   });
 
@@ -75,7 +75,7 @@ describe("fetchPageHtml", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(fetchPageHtml("https://example.com/missing")).rejects.toThrow(
-      "The page returned HTTP 404.",
+      "Die Seite lieferte HTTP 404.",
     );
   });
 
@@ -88,7 +88,9 @@ describe("fetchPageHtml", () => {
           init?.signal?.addEventListener(
             "abort",
             () => {
-              reject(new DOMException("The operation was aborted.", "AbortError"));
+              reject(
+                new DOMException("The operation was aborted.", "AbortError"),
+              );
             },
             { once: true },
           );
@@ -98,7 +100,7 @@ describe("fetchPageHtml", () => {
 
     const requestPromise = fetchPageHtml("https://example.com");
     const assertion = expect(requestPromise).rejects.toThrow(
-      "The request timed out while fetching the page.",
+      "Der Request ist beim Abrufen der Seite in ein Timeout gelaufen.",
     );
 
     await vi.advanceTimersByTimeAsync(8_000);
@@ -120,7 +122,7 @@ describe("fetchPageHtml", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(fetchPageHtml("https://example.com/large")).rejects.toThrow(
-      "The HTML response exceeded the 1 MB limit.",
+      "Die HTML-Antwort hat das 1-MB-Limit überschritten.",
     );
   });
 

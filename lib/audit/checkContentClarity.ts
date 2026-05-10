@@ -30,7 +30,6 @@ const STOPWORDS = new Set([
   "einer",
   "eines",
   "for",
-  "fuer",
   "für",
   "from",
   "have",
@@ -142,66 +141,68 @@ export function checkContentClarity(
   return [
     {
       id: "content-topic-alignment",
-      label: "Title, H1 and body reinforce the same topic",
+      label: "Title, H1 und Fließtext stärken dasselbe Thema",
       passed: hasTopicAlignment,
       weight: 6,
       category: "contentClarity",
       impact: "high",
       recommendation:
-        "Align title, H1 and visible copy around the same few topic terms so the page theme is unmistakable.",
+        "Richte Title, H1 und sichtbaren Text an denselben Kernthemen aus, damit das Seitenthema eindeutig ist.",
       details:
         sharedTopicTerms.length > 0
-          ? `Shared topic terms: ${sharedTopicTerms.join(", ")}`
+          ? `Gemeinsame Themenbegriffe: ${sharedTopicTerms.join(", ")}`
           : undefined,
     },
     {
       id: "content-sufficient-copy",
-      label: "Page includes enough visible explanatory text",
+      label: "Die Seite enthält genug erklärenden sichtbaren Text",
       passed: parsed.wordCount >= 80,
       weight: 6,
       category: "contentClarity",
       impact: "high",
       recommendation:
-        "Add more visible copy that explains the offer, context and user value of the page.",
+        "Ergänze mehr sichtbaren Text, der Angebot, Kontext und Nutzwert der Seite erklärt.",
       details:
-        parsed.wordCount > 0 ? `Estimated word count: ${parsed.wordCount}.` : undefined,
+        parsed.wordCount > 0
+          ? `Geschätzte Wortanzahl: ${parsed.wordCount}.`
+          : undefined,
     },
     {
       id: "content-concrete-services",
-      label: "Concrete services are described",
+      label: "Konkrete Leistungen werden beschrieben",
       passed: uniqueStrings(serviceMatches).length >= 2,
       weight: 5,
       category: "contentClarity",
       impact: "high",
       recommendation:
-        "Name concrete services or deliverables instead of relying on broad value statements alone.",
+        "Nenne konkrete Leistungen oder Deliverables statt nur allgemeiner Nutzenversprechen.",
       details:
         serviceMatches.length > 0
-          ? `Detected service terms: ${uniqueStrings(serviceMatches).join(", ")}`
+          ? `Erkannte Leistungsbegriffe: ${uniqueStrings(serviceMatches).join(", ")}`
           : undefined,
     },
     {
       id: "content-contact-options",
-      label: "A contact option is visible",
+      label: "Eine Kontaktmöglichkeit ist sichtbar",
       passed: hasContactOption,
       weight: 4,
       category: "contentClarity",
       impact: "medium",
       recommendation:
-        "Expose an email, phone number or contact path so users and crawlers can identify a next step.",
+        "Zeige E-Mail, Telefonnummer oder Kontaktweg, damit Nutzer und Crawler einen nächsten Schritt erkennen.",
     },
     {
       id: "content-faq-signal",
-      label: "FAQ-style content is present",
+      label: "FAQ-ähnlicher Inhalt ist vorhanden",
       passed: hasFaqSignal,
       weight: 4,
       category: "contentClarity",
       impact: "medium",
       recommendation:
-        "Add FAQ-style content or direct question-and-answer sections to clarify intent and terminology.",
+        "Ergänze FAQ-ähnliche Inhalte oder direkte Frage-Antwort-Abschnitte, um Absicht und Begriffe zu klären.",
       details:
         questionLikeBlocks.length > 0
-          ? `Detected questions: ${questionLikeBlocks.slice(0, 3).join(" | ")}`
+          ? `Erkannte Fragen: ${questionLikeBlocks.slice(0, 3).join(" | ")}`
           : undefined,
     },
   ];
@@ -215,9 +216,7 @@ function tokenize(value: string) {
     .map((token) => token.trim())
     .filter(
       (token) =>
-        token.length >= 4 &&
-        !STOPWORDS.has(token) &&
-        !/^\d+$/.test(token),
+        token.length >= 4 && !STOPWORDS.has(token) && !/^\d+$/.test(token),
     );
 }
 

@@ -7,13 +7,16 @@ const auditUrlSchema = z.string().trim().min(1).max(2048);
 const blockedHostnameLabels = new Set(["localhost", "local", "internal"]);
 const blockedHostnameSuffixes = [".localhost", ".local", ".internal"];
 const privateTargetMessage =
-  "Local, loopback and private network targets are not allowed.";
+  "Lokale, Loopback- und private Netzwerkziele sind nicht erlaubt.";
 
 export function validateAuditUrl(input: unknown): string {
   const parsedInput = auditUrlSchema.safeParse(input);
 
   if (!parsedInput.success) {
-    throw new AuditError("Please enter a full URL including http:// or https://.", 400);
+    throw new AuditError(
+      "Bitte gib eine vollständige URL inklusive http:// oder https:// ein.",
+      400,
+    );
   }
 
   const candidate = parsedInput.data;
@@ -21,7 +24,10 @@ export function validateAuditUrl(input: unknown): string {
   // We reject protocol-less input instead of auto-prefixing https://.
   // That keeps the audit request explicit and avoids hidden assumptions about the target.
   if (!candidate.includes("://")) {
-    throw new AuditError("Please enter a full URL including http:// or https://.", 400);
+    throw new AuditError(
+      "Bitte gib eine vollständige URL inklusive http:// oder https:// ein.",
+      400,
+    );
   }
 
   let url: URL;
@@ -29,15 +35,21 @@ export function validateAuditUrl(input: unknown): string {
   try {
     url = new URL(candidate);
   } catch {
-    throw new AuditError("Please enter a full URL including http:// or https://.", 400);
+    throw new AuditError(
+      "Bitte gib eine vollständige URL inklusive http:// oder https:// ein.",
+      400,
+    );
   }
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new AuditError("Only http and https URLs are allowed.", 400);
+    throw new AuditError("Es sind nur http- und https-URLs erlaubt.", 400);
   }
 
   if (url.username || url.password) {
-    throw new AuditError("Embedded credentials are not allowed in URLs.", 400);
+    throw new AuditError(
+      "Eingebettete Zugangsdaten sind in URLs nicht erlaubt.",
+      400,
+    );
   }
 
   const hostname = normalizeHostname(url.hostname);

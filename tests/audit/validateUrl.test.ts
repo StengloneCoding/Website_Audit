@@ -14,58 +14,58 @@ describe("validateAuditUrl", () => {
 
   it("rejects an invalid URL", () => {
     expect(() => validateAuditUrl("not-a-url")).toThrow(
-      "Please enter a full URL including http:// or https://.",
+      "Bitte gib eine vollständige URL inklusive http:// oder https:// ein.",
     );
   });
 
   it("rejects ftp URLs", () => {
     expect(() => validateAuditUrl("ftp://example.com/file.txt")).toThrow(
-      "Only http and https URLs are allowed.",
+      "Es sind nur http- und https-URLs erlaubt.",
     );
   });
 
   it("rejects localhost", () => {
     expect(() => validateAuditUrl("http://localhost:3000")).toThrow(
-      "Local, loopback and private network targets are not allowed.",
+      "Lokale, Loopback- und private Netzwerkziele sind nicht erlaubt.",
     );
   });
 
   it("rejects 127.0.0.1", () => {
     expect(() => validateAuditUrl("http://127.0.0.1")).toThrow(
-      "Local, loopback and private network targets are not allowed.",
+      "Lokale, Loopback- und private Netzwerkziele sind nicht erlaubt.",
     );
   });
 
   it("rejects 0.0.0.0", () => {
     expect(() => validateAuditUrl("http://0.0.0.0")).toThrow(
-      "Local, loopback and private network targets are not allowed.",
+      "Lokale, Loopback- und private Netzwerkziele sind nicht erlaubt.",
     );
   });
 
   it("rejects ::1", () => {
     expect(() => validateAuditUrl("http://[::1]")).toThrow(
-      "Local, loopback and private network targets are not allowed.",
+      "Lokale, Loopback- und private Netzwerkziele sind nicht erlaubt.",
     );
   });
 
   it("rejects 192.168.x.x", () => {
     expect(() => validateAuditUrl("http://192.168.1.25/dashboard")).toThrow(
-      "Local, loopback and private network targets are not allowed.",
+      "Lokale, Loopback- und private Netzwerkziele sind nicht erlaubt.",
     );
   });
 
   it("rejects 10.x.x.x", () => {
     expect(() => validateAuditUrl("http://10.20.30.40")).toThrow(
-      "Local, loopback and private network targets are not allowed.",
+      "Lokale, Loopback- und private Netzwerkziele sind nicht erlaubt.",
     );
   });
 
   it("rejects 172.16.x.x through 172.31.x.x", () => {
     expect(() => validateAuditUrl("http://172.16.5.4")).toThrow(
-      "Local, loopback and private network targets are not allowed.",
+      "Lokale, Loopback- und private Netzwerkziele sind nicht erlaubt.",
     );
     expect(() => validateAuditUrl("http://172.31.255.255")).toThrow(
-      "Local, loopback and private network targets are not allowed.",
+      "Lokale, Loopback- und private Netzwerkziele sind nicht erlaubt.",
     );
   });
 

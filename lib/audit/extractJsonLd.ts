@@ -19,7 +19,7 @@ export function extractJsonLd(parsed: ParsedHtml): JsonLdParseResult {
     if (!content) {
       invalidBlocks.push({
         content: "",
-        message: "JSON-LD block is empty.",
+        message: "JSON-LD-Block ist leer.",
       });
       continue;
     }
@@ -30,7 +30,8 @@ export function extractJsonLd(parsed: ParsedHtml): JsonLdParseResult {
       if (!isJsonLdBlock(parsedJson)) {
         invalidBlocks.push({
           content,
-          message: "JSON-LD must contain an object or array at the top level.",
+          message:
+            "JSON-LD muss auf oberster Ebene ein Objekt oder Array enthalten.",
         });
         continue;
       }
@@ -44,7 +45,9 @@ export function extractJsonLd(parsed: ParsedHtml): JsonLdParseResult {
       invalidBlocks.push({
         content,
         message:
-          error instanceof Error ? error.message : "JSON-LD could not be parsed.",
+          error instanceof Error
+            ? error.message
+            : "JSON-LD konnte nicht geparst werden.",
       });
     }
   }

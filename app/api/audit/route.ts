@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     try {
       payload = await request.json();
     } catch {
-      throw new AuditError("The request body must be valid JSON.", 400);
+      throw new AuditError("Der Request-Body muss valides JSON sein.", 400);
     }
 
     const body = requestSchema.parse(payload);
@@ -75,17 +75,20 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Please provide a valid URL payload." },
+        { error: "Bitte sende eine gültige URL im Request-Body." },
         { status: 400 },
       );
     }
 
     if (error instanceof AuditError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode },
+      );
     }
 
     return NextResponse.json(
-      { error: "An unexpected error prevented the audit." },
+      { error: "Ein unerwarteter Fehler hat das Audit verhindert." },
       { status: 500 },
     );
   }
@@ -97,36 +100,36 @@ function buildTechnicalChecks(page: FetchPageResult): AuditCheck[] {
   return [
     {
       id: "technical-https",
-      label: "Final URL uses HTTPS",
+      label: "Die finale URL nutzt HTTPS",
       passed: finalProtocol === "https:",
       weight: 4,
       category: "technicalAccessibility",
       impact: "high",
       recommendation:
-        "Serve the preferred public page over HTTPS to improve trust and accessibility signals.",
-      details: `Resolved protocol: ${finalProtocol.replace(":", "")}.`,
+        "Stelle die bevorzugte öffentliche Seite über HTTPS bereit, um Vertrauen und Zugänglichkeitssignale zu verbessern.",
+      details: `Aufgelöstes Protokoll: ${finalProtocol.replace(":", "")}.`,
     },
     {
       id: "technical-response-time",
-      label: "Page responds within the timeout budget",
+      label: "Die Seite antwortet innerhalb des Zeitbudgets",
       passed: page.responseTimeMs <= 3_000,
       weight: 3,
       category: "technicalAccessibility",
       impact: "medium",
       recommendation:
-        "Improve response times so crawlers and AI systems can fetch the page more reliably.",
-      details: `Measured response time: ${page.responseTimeMs} ms.`,
+        "Verbessere die Antwortzeiten, damit Crawler und KI-Systeme die Seite zuverlässiger abrufen können.",
+      details: `Gemessene Antwortzeit: ${page.responseTimeMs} ms.`,
     },
     {
       id: "technical-html-size",
-      label: "HTML size stays within a lean range",
+      label: "Die HTML-Größe bleibt in einem schlanken Bereich",
       passed: page.htmlBytes <= 750_000,
       weight: 3,
       category: "technicalAccessibility",
       impact: "medium",
       recommendation:
-        "Keep rendered HTML lean to make content easier to fetch and parse.",
-      details: `HTML size: ${page.htmlBytes} bytes.`,
+        "Halte das gerenderte HTML schlank, damit Inhalte leichter abgerufen und geparst werden können.",
+      details: `HTML-Größe: ${page.htmlBytes} Bytes.`,
     },
   ];
 }

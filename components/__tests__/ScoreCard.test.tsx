@@ -14,6 +14,6 @@ describe("ScoreCard", () => {
 
     expect(screen.getByText("78")).toBeInTheDocument();
     expect(screen.getByText("https://example.com")).toBeInTheDocument();
-    expect(screen.getByText("Readiness signals, not rankings")).toBeInTheDocument();
+    expect(screen.getByText("Readiness-Signale, keine Rankings")).toBeInTheDocument();
   });
 });

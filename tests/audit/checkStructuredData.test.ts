@@ -35,7 +35,7 @@ describe("checkStructuredData", () => {
     expect(findCheck(checks, "structured-jsonld-present")).toMatchObject({
       passed: false,
       recommendation:
-        "Add JSON-LD schema to clarify the business entity, services, location and page purpose.",
+        "Ergänze JSON-LD-Schema, um Unternehmensentität, Leistungen, Standort und Seitenzweck klarer zu machen.",
     });
     expect(findCheck(checks, "structured-jsonld-valid")).toMatchObject({
       passed: false,
@@ -50,9 +50,9 @@ describe("checkStructuredData", () => {
       </script>
     `);
 
-    expect(findCheck(checks, "structured-organization-or-local-business").passed).toBe(
-      true,
-    );
+    expect(
+      findCheck(checks, "structured-organization-or-local-business").passed,
+    ).toBe(true);
   });
 
   it("recognizes LocalBusiness schema", () => {
@@ -62,9 +62,9 @@ describe("checkStructuredData", () => {
       </script>
     `);
 
-    expect(findCheck(checks, "structured-organization-or-local-business").passed).toBe(
-      true,
-    );
+    expect(
+      findCheck(checks, "structured-organization-or-local-business").passed,
+    ).toBe(true);
   });
 
   it("recognizes WebSite schema", () => {
@@ -115,7 +115,9 @@ describe("checkStructuredData", () => {
       </html>
     `);
 
-    expect(findCheck(faqRelevant.checks, "structured-faqpage").passed).toBe(false);
+    expect(findCheck(faqRelevant.checks, "structured-faqpage").passed).toBe(
+      false,
+    );
 
     const nonFaqPage = analyzeStructuredData(`
       <html>
@@ -126,9 +128,9 @@ describe("checkStructuredData", () => {
       </html>
     `);
 
-    expect(nonFaqPage.checks.some((check) => check.id === "structured-faqpage")).toBe(
-      false,
-    );
+    expect(
+      nonFaqPage.checks.some((check) => check.id === "structured-faqpage"),
+    ).toBe(false);
   });
 
   it("does not claim a page becomes invisible without schema", () => {
@@ -142,7 +144,11 @@ describe("checkStructuredData", () => {
     `);
 
     const combinedCopy = checks
-      .flatMap((check) => [check.label, check.recommendation, check.details ?? ""])
+      .flatMap((check) => [
+        check.label,
+        check.recommendation,
+        check.details ?? "",
+      ])
       .join(" ");
 
     expect(combinedCopy).not.toMatch(/invisible|unsichtbar/i);

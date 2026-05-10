@@ -95,8 +95,12 @@ export function checkEntitySignals(
   const text = parsed.cleanText;
   const lowerText = text.toLowerCase();
   const serviceMatches = collectPhraseMatches(lowerText, SERVICE_PATTERNS);
-  const audienceMatches = AUDIENCE_PATTERNS.filter((pattern) => pattern.test(text));
-  const expertiseMatches = EXPERTISE_PATTERNS.filter((pattern) => pattern.test(text));
+  const audienceMatches = AUDIENCE_PATTERNS.filter((pattern) =>
+    pattern.test(text),
+  );
+  const expertiseMatches = EXPERTISE_PATTERNS.filter((pattern) =>
+    pattern.test(text),
+  );
   const locationMatches = LOCATION_PATTERNS.flatMap((pattern) => [
     ...text.matchAll(pattern),
   ]);
@@ -111,7 +115,10 @@ export function checkEntitySignals(
     (sum, term) => sum + term.count,
     0,
   );
-  const dominantCount = dominantTerms.reduce((sum, term) => sum + term.count, 0);
+  const dominantCount = dominantTerms.reduce(
+    (sum, term) => sum + term.count,
+    0,
+  );
   const hasSpecificTerms =
     dominantTerms.length > 0 &&
     genericDominantTerms.length < 3 &&
@@ -127,78 +134,78 @@ export function checkEntitySignals(
   return [
     {
       id: "entity-business-name-visible",
-      label: "Business name is explicitly mentioned",
+      label: "Der Unternehmensname wird explizit genannt",
       passed: hasBusinessName,
       weight: 4,
       category: "entitySignals",
       impact: "high",
       recommendation:
-        "Mention the business or brand name visibly in the page copy, hero, footer or contact context.",
+        "Nenne den Unternehmens- oder Markennamen sichtbar im Seitentext, Hero-Bereich, Footer oder Kontaktkontext.",
       details:
         businessNameCandidates.length > 0
-          ? `Brand-like headings or title segments: ${businessNameCandidates.join(", ")}`
+          ? `Markenähnliche Überschriften oder Titelsegmente: ${businessNameCandidates.join(", ")}`
           : undefined,
     },
     {
       id: "entity-location-signal",
-      label: "Location or service area is recognizable",
+      label: "Standort oder Einzugsgebiet ist erkennbar",
       passed: locationMatches.length > 0,
       weight: 4,
       category: "entitySignals",
       impact: "high",
       recommendation:
-        "Name a location, office, region or service area so crawlers can connect the business to a place.",
+        "Nenne Standort, Büro, Region oder Einzugsgebiet, damit Crawler das Unternehmen einem Ort zuordnen können.",
       details:
         locationMatches.length > 0
-          ? `Detected location hints: ${uniqueStrings(locationMatches.map((match) => match[0])).join(", ")}`
+          ? `Erkannte Standorthinweise: ${uniqueStrings(locationMatches.map((match) => match[0])).join(", ")}`
           : undefined,
     },
     {
       id: "entity-services-signal",
-      label: "Concrete services are named",
+      label: "Konkrete Leistungen werden benannt",
       passed: serviceMatches.length >= 2,
       weight: 4,
       category: "entitySignals",
       impact: "high",
       recommendation:
-        "Name concrete services such as audits, consulting, strategy or implementation work.",
+        "Nenne konkrete Leistungen wie Audits, Beratung, Strategie oder Umsetzungsarbeit.",
       details:
         serviceMatches.length > 0
-          ? `Detected services: ${serviceMatches.join(", ")}`
+          ? `Erkannte Leistungen: ${serviceMatches.join(", ")}`
           : undefined,
     },
     {
       id: "entity-audience-signal",
-      label: "Target audience is recognizable",
+      label: "Die Zielgruppe ist erkennbar",
       passed: audienceMatches.length > 0,
       weight: 4,
       category: "entitySignals",
       impact: "medium",
       recommendation:
-        "State who the page is for, for example B2B SaaS teams, founders or local businesses.",
+        "Nenne klar, für wen die Seite gedacht ist, zum Beispiel B2B-SaaS-Teams, Gründer oder lokale Unternehmen.",
     },
     {
       id: "entity-expertise-signal",
-      label: "Author, person or expertise signals are visible",
+      label: "Autor-, Personen- oder Expertise-Signale sind sichtbar",
       passed: expertiseMatches.length > 0,
       weight: 4,
       category: "entitySignals",
       impact: "high",
       recommendation:
-        "Add visible people, author or expertise cues such as a founder, team, credentials or years of experience.",
+        "Ergänze sichtbare Personen-, Autoren- oder Expertise-Hinweise wie Gründer, Team, Qualifikationen oder Jahre Erfahrung.",
     },
     {
       id: "entity-recurring-terms",
-      label: "Recurring relevant terms reinforce the topic",
+      label: "Wiederkehrende relevante Begriffe stärken das Thema",
       passed: recurringRelevantTerms.length >= 2,
       weight: 3,
       category: "entitySignals",
       impact: "medium",
       recommendation:
-        "Repeat a few relevant terms naturally so the page reinforces its main entities and services.",
+        "Wiederhole einige relevante Begriffe natürlich, damit die Seite ihre zentralen Entitäten und Leistungen stärkt.",
       details:
         recurringRelevantTerms.length > 0
-          ? `Recurring terms: ${recurringRelevantTerms
+          ? `Wiederkehrende Begriffe: ${recurringRelevantTerms
               .slice(0, 5)
               .map((term) => `${term.term} (${term.count})`)
               .join(", ")}`
@@ -206,7 +213,7 @@ export function checkEntitySignals(
     },
     {
       id: "entity-specific-terms",
-      label: "Top recurring terms are specific rather than generic",
+      label: "Die Top-Begriffe sind eher spezifisch als generisch",
       passed: hasSpecificTerms,
       weight: 2,
       category: "entitySignals",
@@ -214,7 +221,7 @@ export function checkEntitySignals(
       recommendation: GENERIC_WARNING,
       details:
         genericDominantTerms.length > 0
-          ? `Generic dominant terms: ${genericDominantTerms
+          ? `Dominante generische Begriffe: ${genericDominantTerms
               .map((term) => `${term.term} (${term.count})`)
               .join(", ")}`
           : undefined,

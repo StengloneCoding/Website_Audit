@@ -38,7 +38,7 @@ export function AuditForm() {
 
       if (!response.ok) {
         const payload = (await response.json()) as AuditErrorPayload;
-        throw new Error(payload.error ?? "The audit could not be completed.");
+        throw new Error(payload.error ?? "Das Audit konnte nicht abgeschlossen werden.");
       }
 
       const payload = (await response.json()) as AuditResult;
@@ -47,7 +47,7 @@ export function AuditForm() {
       const message =
         submissionError instanceof Error
           ? submissionError.message
-          : "The audit could not be completed.";
+          : "Das Audit konnte nicht abgeschlossen werden.";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -64,7 +64,7 @@ export function AuditForm() {
                 htmlFor="url"
                 className="mb-3 block text-sm font-medium text-slate-700"
               >
-                Website URL
+                Website-URL
               </label>
               <div className="flex items-center gap-3 rounded-2xl border border-slate-900/10 bg-white px-4 py-3 shadow-sm">
                 <Search className="h-5 w-5 text-slate-400" />
@@ -91,23 +91,23 @@ export function AuditForm() {
               {isLoading ? (
                 <>
                   <LoaderCircle className="h-4 w-4 animate-spin" />
-                  Analyzing
+                  Analysiere
                 </>
               ) : (
-                "Run audit"
+                "Audit starten"
               )}
             </button>
           </div>
 
           <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-3">
             <div className="rounded-2xl border border-white/60 bg-white/80 p-4">
-              Only `http` and `https` URLs are accepted.
+              Es sind nur URLs mit http und https erlaubt.
             </div>
             <div className="rounded-2xl border border-white/60 bg-white/80 p-4">
-              Local and private network targets are blocked.
+              Lokale und private Netzwerkziele sind blockiert.
             </div>
             <div className="rounded-2xl border border-white/60 bg-white/80 p-4">
-              Results describe readiness signals, not live rankings.
+              Die Ergebnisse zeigen Readiness-Signale, keine Live-Rankings.
             </div>
           </div>
         </form>
@@ -118,7 +118,7 @@ export function AuditForm() {
           <div className="flex items-start gap-3">
             <ShieldAlert className="mt-0.5 h-5 w-5 flex-none" />
             <div>
-              <p className="font-semibold">Audit unavailable</p>
+              <p className="font-semibold">Audit nicht verfügbar</p>
               <p className="mt-1 text-sm leading-6 text-red-800">{error}</p>
             </div>
           </div>
@@ -143,14 +143,14 @@ export function AuditForm() {
 
           <div className="grid gap-6 xl:grid-cols-2">
             <SignalList
-              title="Strong signals"
-              subtitle="Areas that already provide good machine-readable context."
+              title="Starke Signale"
+              subtitle="Bereiche, die bereits guten maschinenlesbaren Kontext liefern."
               checks={result.strongSignals}
               variant="positive"
             />
             <SignalList
-              title="Weak signals"
-              subtitle="Signals that currently reduce clarity or machine-readable context."
+              title="Schwache Signale"
+              subtitle="Signale, die aktuell Klarheit oder maschinenlesbaren Kontext reduzieren."
               checks={result.weakSignals}
               variant="negative"
             />

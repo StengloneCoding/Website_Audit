@@ -11,10 +11,10 @@ export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
     <article className="panel p-6 md:p-7">
       <div className="space-y-2">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-500">
-          Category breakdown
+          Kategorieaufschlüsselung
         </p>
         <h2 className="text-2xl font-semibold text-slate-950">
-          How the score is distributed
+          So verteilt sich der Score
         </h2>
       </div>
 
@@ -30,7 +30,7 @@ export function CategoryBreakdown({ categories }: CategoryBreakdownProps) {
                   {CATEGORY_LABELS[entry.category]}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {entry.passedChecks} of {entry.totalChecks} checks passed
+                  {entry.passedChecks} von {entry.totalChecks} Checks bestanden
                 </p>
               </div>
               <p className="text-lg font-semibold text-slate-950">

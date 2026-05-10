@@ -9,21 +9,21 @@ import { AuditForm } from "@/components/AuditForm";
 export default function Home() {
   const pillars = [
     {
-      title: "Technical Signals",
+      title: "Technische Signale",
       description:
-        "Checks whether a page is accessible, secure and easy to parse for crawlers and AI systems.",
+        "Prüft, ob eine Seite zugänglich, sicher und für Crawler sowie KI-Systeme leicht zu parsen ist.",
       icon: SearchCode,
     },
     {
-      title: "Semantic Context",
+      title: "Semantischer Kontext",
       description:
-        "Highlights schema markup, entity hints and content structure that improve machine-readable context.",
+        "Hebt Schema-Markup, Entitätshinweise und Inhaltsstruktur hervor, die den maschinenlesbaren Kontext verbessern.",
       icon: Waypoints,
     },
     {
-      title: "Actionable Guidance",
+      title: "Konkrete Handlungsempfehlungen",
       description:
-        "Turns weak signals into clear recommendations instead of vague visibility claims.",
+        "Verwandelt schwache Signale in klare Empfehlungen statt in vage Sichtbarkeitsversprechen.",
       icon: Sparkles,
     },
   ];
@@ -35,40 +35,41 @@ export default function Home() {
           <div className="space-y-5">
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
               <ShieldCheck className="h-4 w-4 text-teal-700" />
-              AI Visibility Readiness Audit
+              KI-Readiness-Sichtbarkeits-Audit
             </div>
             <div className="space-y-4">
               <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl lg:text-6xl">
-                Audit the technical and semantic signals that make a website
-                easier to understand for search engines and AI systems.
+                Prüfe die Verständlichkeit deiner
+                Website für Suchmaschinen und KI-Systeme.
               </h1>
               <p className="max-w-3xl text-lg leading-8 text-slate-600 md:text-xl">
-                Run a fast, explainable quick check for machine-readable context
-                signals across SEO basics, content clarity, entity signals,
-                structured data and technical accessibility.
+                Starte einen schnellen, nachvollziehbaren Check für
+                maschinenlesbare Kontextsignale in SEO-Basics,
+                Inhaltsklarheit, Entitätssignalen, strukturierten Daten und
+                technischer Zugänglichkeit.
               </p>
             </div>
           </div>
 
           <div className="panel grid-noise p-6">
             <p className="font-mono text-xs uppercase tracking-[0.28em] text-slate-500">
-              Positioning
+              Positionierung
             </p>
             <div className="mt-4 space-y-4">
               <h2 className="text-2xl font-semibold text-slate-950">
-                No fake ranking promises.
+                Keine falschen Ranking-Versprechen.
               </h2>
               <p className="text-sm leading-7 text-slate-600">
-                The MVP measures readiness, not rankings. It focuses on
-                technical and semantic signals that help machines form better
-                context around a page.
+                Das MVP misst Readiness, nicht Rankings. Der Fokus liegt auf
+                technischen und semantischen Signalen, die Maschinen helfen,
+                besseren Kontext rund um eine Seite zu bilden.
               </p>
               <div className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
                 <div className="rounded-2xl border border-white/60 bg-white/80 p-4">
-                  AI Visibility Readiness score
+                  KI-Readiness-Score für Sichtbarkeit
                 </div>
                 <div className="rounded-2xl border border-white/60 bg-white/80 p-4">
-                  Explainable recommendations
+                  Nachvollziehbare Empfehlungen
                 </div>
               </div>
             </div>
