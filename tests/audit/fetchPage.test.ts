@@ -108,14 +108,14 @@ describe("fetchPageHtml", () => {
     await assertion;
   });
 
-  it("rejects responses larger than 1 MB", async () => {
+  it("rejects responses larger than 5 MB", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       createResponse("<html><body>Too large</body></html>", {
         status: 200,
         url: "https://example.com/large",
         headers: {
           "content-type": "text/html; charset=utf-8",
-          "content-length": "1000001",
+          "content-length": "5000001",
         },
       }),
     );

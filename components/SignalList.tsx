@@ -37,6 +37,10 @@ export function SignalList({
     variant === "positive"
       ? "bg-emerald-100 text-emerald-800"
       : "bg-red-100 text-red-800";
+  const emptyCopy =
+    variant === "positive"
+      ? "Im aktuellen Snapshot wurden noch keine starken Signale hervorgehoben."
+      : "Im aktuellen Snapshot wurden keine schwachen Signale markiert.";
 
   return (
     <article className="panel p-6 md:p-7">
@@ -48,10 +52,10 @@ export function SignalList({
         <p className="text-sm leading-7 text-slate-600">{subtitle}</p>
       </div>
 
-      <div className="mt-6 space-y-4">
-        {checks.length > 0 ? (
-          checks.map((check) => (
-            <div
+      {checks.length > 0 ? (
+        <ul className="mt-6 space-y-4" role="list">
+          {checks.map((check) => (
+            <li
               key={check.id}
               className="rounded-2xl border border-slate-900/8 bg-white/80 p-4"
             >
@@ -83,14 +87,14 @@ export function SignalList({
                   </p>
                 </div>
               </div>
-            </div>
-          ))
-        ) : (
-          <div className="rounded-2xl border border-slate-900/8 bg-white/80 p-4 text-sm text-slate-600">
-            Noch keine Signale verfügbar.
-          </div>
-        )}
-      </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="mt-6 rounded-2xl border border-slate-900/8 bg-white/80 p-4 text-sm text-slate-600">
+          {emptyCopy}
+        </div>
+      )}
     </article>
   );
 }

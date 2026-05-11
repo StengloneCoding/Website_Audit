@@ -188,3 +188,25 @@ export interface AuditResult {
   metadata: AuditMetadata;
   checks: AuditCheck[];
 }
+
+export interface LeadTeaserPoint {
+  title: string;
+  impact: Exclude<AuditImpact, "low">;
+  summary: string;
+  teaserRecommendation: string;
+}
+
+export interface LeadTeaserCta {
+  headline: string;
+  text: string;
+  buttonLabel: string;
+  targetUrl: string;
+}
+
+export interface LeadTeaserResponse {
+  url: string;
+  score: number;
+  criticalPoints: LeadTeaserPoint[];
+  cta: LeadTeaserCta;
+  disclaimer: string;
+}

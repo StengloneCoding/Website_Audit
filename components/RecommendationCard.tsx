@@ -67,8 +67,9 @@ export function RecommendationCard({
             </div>
           ))
         ) : (
-          <div className="rounded-2xl border border-slate-900/8 bg-white/85 p-4 text-sm text-slate-600">
-            Keine Empfehlungen verfügbar.
+          <div className="rounded-2xl border border-slate-900/8 bg-white/85 p-4 text-sm leading-7 text-slate-600">
+            Der aktuelle Snapshot enthält noch keine priorisierten
+            Empfehlungen.
           </div>
         )}
       </div>

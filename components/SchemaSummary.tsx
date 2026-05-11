@@ -63,9 +63,11 @@ export function SchemaSummary({ summary, schemaTypes }: SchemaSummaryProps) {
               </span>
             ))
           ) : (
-            <p className="text-sm leading-7 text-slate-600">
-              Es wurden keine parsebaren schema.org-Typen erkannt.
-            </p>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm leading-7 text-amber-950">
+              Es wurden keine parsebaren schema.org-Typen erkannt. Das bedeutet
+              nicht, dass die Seite unsichtbar ist, aber strukturierter Kontext
+              wird aktuell nicht explizit signalisiert.
+            </div>
           )}
         </div>
       </div>

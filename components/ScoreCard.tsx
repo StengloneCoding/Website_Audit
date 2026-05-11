@@ -1,30 +1,47 @@
 "use client";
 
-import { CalendarClock, Globe, ShieldCheck } from "lucide-react";
+import { BarChart3, ShieldCheck, Sparkles } from "lucide-react";
 
 interface ScoreCardProps {
   score: number;
-  analyzedAt: string;
-  url: string;
 }
 
-function getScoreLabel(score: number) {
+function getScoreMeta(score: number) {
   if (score >= 80) {
-    return "Hohe Readiness";
+    return {
+      label: "Hohe Readiness",
+      description:
+        "Die Seite sendet bereits viele gut lesbare technische und semantische Signale.",
+      badgeClass: "bg-teal-100 text-teal-800",
+      scoreClass: "text-teal-800",
+      range: "80-100",
+    };
   }
 
   if (score >= 60) {
-    return "Gute Ausgangsbasis";
+    return {
+      label: "Gute Ausgangsbasis",
+      description:
+        "Die Seite liefert schon brauchbare Signale, hat aber noch klare Hebel für mehr Verständlichkeit.",
+      badgeClass: "bg-amber-100 text-amber-900",
+      scoreClass: "text-amber-900",
+      range: "60-79",
+    };
   }
 
-  return "Verbesserung nötig";
+  return {
+    label: "Verbesserung nötig",
+    description:
+      "Mehr Klarheit in Inhalt, Struktur oder technischen Signalen würde den Maschinenkontext spürbar stärken.",
+    badgeClass: "bg-red-100 text-red-900",
+    scoreClass: "text-red-900",
+    range: "0-59",
+  };
 }
 
-export function ScoreCard({
-  score,
-  analyzedAt,
-  url,
-}: ScoreCardProps) {
+export function ScoreCard({ score }: ScoreCardProps) {
+  const scoreMeta = getScoreMeta(score);
+
   return (
     <article className="panel p-6 md:p-7">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -33,20 +50,30 @@ export function ScoreCard({
             KI-Readiness für Sichtbarkeit
           </p>
           <div>
-            <h2 className="text-3xl font-semibold text-slate-950 md:text-4xl">
-              {getScoreLabel(score)}
-            </h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-3xl font-semibold text-slate-950 md:text-4xl">
+                {scoreMeta.label}
+              </h2>
+              <span
+                className={`rounded-full px-3 py-1 text-sm font-semibold ${scoreMeta.badgeClass}`}
+              >
+                Scorebereich {scoreMeta.range}
+              </span>
+            </div>
             <p className="mt-2 max-w-xl text-sm leading-7 text-slate-600">
-              Dieser Score fasst technische, semantische und strukturierte
-              Signale zusammen, die die Lesbarkeit einer Website für
-              Suchmaschinen und KI-Systeme verbessern.
+              {scoreMeta.description}
             </p>
           </div>
         </div>
 
-        <div className="flex h-40 w-40 items-center justify-center rounded-full metric-ring p-3 shadow-lg shadow-slate-900/10">
+        <div
+          className="flex h-40 w-40 items-center justify-center rounded-full metric-ring p-3 shadow-lg shadow-slate-900/10"
+          aria-label={`Readiness-Score ${score} von 100`}
+        >
           <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-slate-950">
-            <span className="text-5xl font-semibold">{score}</span>
+            <span className={`text-5xl font-semibold ${scoreMeta.scoreClass}`}>
+              {score}
+            </span>
             <span className="mt-1 text-xs uppercase tracking-[0.28em] text-slate-500">
               / 100
             </span>
@@ -57,24 +84,24 @@ export function ScoreCard({
       <div className="mt-6 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-900/8 bg-white/80 p-4">
           <div className="flex items-center gap-2 text-slate-500">
-            <Globe className="h-4 w-4" />
-            Geprüfte URL
+            <BarChart3 className="h-4 w-4" />
+            Einordnung
           </div>
-          <p className="mt-2 break-all font-medium text-slate-900">{url}</p>
+          <p className="mt-2 font-medium text-slate-900">{scoreMeta.label}</p>
         </div>
         <div className="rounded-2xl border border-slate-900/8 bg-white/80 p-4">
           <div className="flex items-center gap-2 text-slate-500">
-            <CalendarClock className="h-4 w-4" />
-            Analysiert am
+            <Sparkles className="h-4 w-4" />
+            Fokus
           </div>
           <p className="mt-2 font-medium text-slate-900">
-            {new Date(analyzedAt).toLocaleString()}
+            Technische und semantische Readiness
           </p>
         </div>
         <div className="rounded-2xl border border-slate-900/8 bg-white/80 p-4">
           <div className="flex items-center gap-2 text-slate-500">
             <ShieldCheck className="h-4 w-4" />
-            Fokus
+            Hinweis
           </div>
           <p className="mt-2 font-medium text-slate-900">
             Readiness-Signale, keine Rankings

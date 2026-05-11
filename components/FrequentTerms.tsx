@@ -23,10 +23,10 @@ export function FrequentTerms({ terms }: FrequentTermsProps) {
         </p>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        {terms.length > 0 ? (
-          terms.map((term) => (
-            <div
+      {terms.length > 0 ? (
+        <ul className="mt-6 flex flex-wrap gap-3" role="list">
+          {terms.map((term) => (
+            <li
               key={term.term}
               className="flex items-center gap-3 rounded-full border border-slate-900/8 bg-white/85 px-4 py-3 text-sm text-slate-700"
             >
@@ -35,14 +35,15 @@ export function FrequentTerms({ terms }: FrequentTermsProps) {
               <span className="font-mono text-xs uppercase tracking-[0.18em] text-slate-500">
                 {term.count}x
               </span>
-            </div>
-          ))
-        ) : (
-          <div className="rounded-2xl border border-slate-900/8 bg-white/85 p-4 text-sm text-slate-600">
-            Es wurde nicht genug Text gefunden, um wiederkehrende Begriffssignale zu extrahieren.
-          </div>
-        )}
-      </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="mt-6 rounded-2xl border border-slate-900/8 bg-white/85 p-4 text-sm leading-7 text-slate-600">
+          Es wurde nicht genug Text gefunden, um wiederkehrende
+          Begriffssignale zu extrahieren.
+        </div>
+      )}
     </article>
   );
 }

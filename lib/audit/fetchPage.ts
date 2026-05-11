@@ -105,7 +105,7 @@ export async function fetchPageHtml(url: string): Promise<FetchPageResult> {
       if (isAbortError(error)) {
         throw new AuditError(
           "Der Request ist beim Abrufen der Seite in ein Timeout gelaufen.",
-          504,
+          408,
         );
       }
 

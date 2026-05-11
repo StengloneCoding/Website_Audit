@@ -2,57 +2,37 @@
 
 import { useState } from "react";
 import { LoaderCircle, Search, ShieldAlert } from "lucide-react";
-import type { AuditResult } from "@/lib/audit/types";
-import { CategoryBreakdown } from "@/components/CategoryBreakdown";
-import { FrequentTerms } from "@/components/FrequentTerms";
-import { IssueList } from "@/components/IssueList";
-import { RecommendationCard } from "@/components/RecommendationCard";
-import { SchemaSummary } from "@/components/SchemaSummary";
-import { ScoreCard } from "@/components/ScoreCard";
-import { SignalList } from "@/components/SignalList";
 
-interface AuditErrorPayload {
-  error?: string;
+interface AuditFormProps {
+  onSubmit: (url: string) => Promise<void> | void;
+  isLoading: boolean;
+  error: string | null;
 }
 
-export function AuditForm() {
+export function AuditForm({
+  onSubmit,
+  isLoading,
+  error,
+}: AuditFormProps) {
   const [url, setUrl] = useState("");
-  const [result, setResult] = useState<AuditResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setResult(null);
+    const trimmedUrl = url.trim();
 
-    try {
-      const response = await fetch("/api/audit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url }),
-      });
-
-      if (!response.ok) {
-        const payload = (await response.json()) as AuditErrorPayload;
-        throw new Error(payload.error ?? "Das Audit konnte nicht abgeschlossen werden.");
-      }
-
-      const payload = (await response.json()) as AuditResult;
-      setResult(payload);
-    } catch (submissionError) {
-      const message =
-        submissionError instanceof Error
-          ? submissionError.message
-          : "Das Audit konnte nicht abgeschlossen werden.";
-      setError(message);
-    } finally {
-      setIsLoading(false);
+    if (!trimmedUrl || !isValidHttpUrl(trimmedUrl)) {
+      setValidationError(
+        "Bitte geben Sie eine vollständige URL inklusive http:// oder https:// ein.",
+      );
+      return;
     }
+
+    setValidationError(null);
+    await onSubmit(trimmedUrl);
   }
+
+  const activeError = validationError ?? error;
 
   return (
     <div className="space-y-6">
@@ -76,8 +56,14 @@ export function AuditForm() {
                   placeholder="https://example.com"
                   className="w-full bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400"
                   value={url}
-                  onChange={(event) => setUrl(event.target.value)}
+                  onChange={(event) => {
+                    setUrl(event.target.value);
+                    if (validationError) {
+                      setValidationError(null);
+                    }
+                  }}
                   disabled={isLoading}
+                  aria-invalid={activeError ? "true" : "false"}
                   required
                 />
               </div>
@@ -91,10 +77,10 @@ export function AuditForm() {
               {isLoading ? (
                 <>
                   <LoaderCircle className="h-4 w-4 animate-spin" />
-                  Analysiere
+                  Analysiere Website
                 </>
               ) : (
-                "Audit starten"
+                "Website analysieren"
               )}
             </button>
           </div>
@@ -113,58 +99,31 @@ export function AuditForm() {
         </form>
       </section>
 
-      {error ? (
-        <section className="panel border-red-200 bg-red-50/80 p-5 text-red-900">
+      {activeError ? (
+        <section
+          className="panel border-red-200 bg-red-50/80 p-5 text-red-900"
+          role="alert"
+        >
           <div className="flex items-start gap-3">
             <ShieldAlert className="mt-0.5 h-5 w-5 flex-none" />
             <div>
               <p className="font-semibold">Audit nicht verfügbar</p>
-              <p className="mt-1 text-sm leading-6 text-red-800">{error}</p>
+              <p className="mt-1 text-sm leading-6 text-red-800">
+                {activeError}
+              </p>
             </div>
-          </div>
-        </section>
-      ) : null}
-
-      {result ? (
-        <section className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-            <ScoreCard
-              score={result.score}
-              analyzedAt={result.metadata.analyzedAt}
-              url={result.url}
-            />
-            <CategoryBreakdown categories={result.categories} />
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <IssueList issues={result.issues} />
-            <RecommendationCard recommendations={result.recommendations} />
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <SignalList
-              title="Starke Signale"
-              subtitle="Bereiche, die bereits guten maschinenlesbaren Kontext liefern."
-              checks={result.strongSignals}
-              variant="positive"
-            />
-            <SignalList
-              title="Schwache Signale"
-              subtitle="Signale, die aktuell Klarheit oder maschinenlesbaren Kontext reduzieren."
-              checks={result.weakSignals}
-              variant="negative"
-            />
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <FrequentTerms terms={result.frequentTerms} />
-            <SchemaSummary
-              summary={result.metadata.structuredData}
-              schemaTypes={result.schemaTypes}
-            />
           </div>
         </section>
       ) : null}
     </div>
   );
+}
+
+function isValidHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
