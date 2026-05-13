@@ -11,7 +11,7 @@ const requestSchema = z.object({
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  if (!isAuthorizedInternalAuditRequest(request)) {
+  if (!isAuthorizedAuditRequest(request)) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
 
@@ -50,6 +50,25 @@ export async function POST(request: Request) {
   }
 }
 
+function isAuthorizedAuditRequest(request: Request) {
+  if (request.headers.has("x-internal-audit-secret")) {
+    return isAuthorizedInternalAuditRequest(request);
+  }
+
+  if (isAuthorizedInternalAuditRequest(request)) {
+    return true;
+  }
+
+  if (isAllowedSameOriginBrowserRequest(request)) {
+    return true;
+  }
+
+  return (
+    process.env.NODE_ENV !== "production" &&
+    !process.env.INTERNAL_AUDIT_SECRET?.trim()
+  );
+}
+
 function isAuthorizedInternalAuditRequest(request: Request) {
   const configuredSecret = process.env.INTERNAL_AUDIT_SECRET?.trim();
 
@@ -71,4 +90,53 @@ function isAuthorizedInternalAuditRequest(request: Request) {
   }
 
   return timingSafeEqual(configuredBuffer, providedBuffer);
+}
+
+function isAllowedSameOriginBrowserRequest(request: Request) {
+  if (process.env.NODE_ENV === "production") {
+    const fetchSite = request.headers.get("sec-fetch-site")?.trim().toLowerCase();
+
+    if (fetchSite && fetchSite !== "same-origin") {
+      return false;
+    }
+  }
+
+  const requestOrigin = getRequestOrigin(request);
+
+  if (!requestOrigin) {
+    return false;
+  }
+
+  const originHeader = request.headers.get("origin")?.trim();
+
+  if (originHeader) {
+    return normalizeOrigin(originHeader) === requestOrigin;
+  }
+
+  const refererHeader = request.headers.get("referer")?.trim();
+
+  if (!refererHeader) {
+    return false;
+  }
+
+  return normalizeOrigin(refererHeader) === requestOrigin;
+}
+
+function getRequestOrigin(request: Request) {
+  const forwardedHost = request.headers.get("x-forwarded-host")?.trim();
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.trim();
+
+  if (forwardedHost && forwardedProto) {
+    return normalizeOrigin(`${forwardedProto}://${forwardedHost}`);
+  }
+
+  return normalizeOrigin(request.url);
+}
+
+function normalizeOrigin(value: string) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
 }

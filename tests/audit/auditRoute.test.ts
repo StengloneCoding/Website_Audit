@@ -62,10 +62,45 @@ describe("POST /api/audit", () => {
     vi.unstubAllEnvs();
   });
 
-  it("rejects a request without the internal secret when a secret is configured", async () => {
+  it("allows a same-origin browser request without the internal secret", async () => {
+    vi.stubEnv("INTERNAL_AUDIT_SECRET", "top-secret");
+    runAuditMock.mockResolvedValue(auditResult);
+
+    const response = await POST(
+      createRequest(
+        { url: "https://example.com" },
+        {
+          origin: "https://audit.example.com",
+          "sec-fetch-site": "same-origin",
+          "x-forwarded-host": "audit.example.com",
+          "x-forwarded-proto": "https",
+        },
+      ),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      url: "https://example.com/",
+      score: 82,
+    });
+    expect(runAuditMock).toHaveBeenCalledWith("https://example.com");
+  });
+
+  it("rejects a cross-site browser request without the internal secret", async () => {
     vi.stubEnv("INTERNAL_AUDIT_SECRET", "top-secret");
 
-    const response = await POST(createRequest({ url: "https://example.com" }));
+    const response = await POST(
+      createRequest(
+        { url: "https://example.com" },
+        {
+          origin: "https://evil.example.com",
+          "sec-fetch-site": "cross-site",
+          "x-forwarded-host": "audit.example.com",
+          "x-forwarded-proto": "https",
+        },
+      ),
+    );
     const payload = await response.json();
 
     expect(response.status).toBe(404);
@@ -152,7 +187,7 @@ describe("POST /api/audit", () => {
     });
   });
 
-  it("keeps the full audit route closed in production when no secret is configured", async () => {
+  it("keeps the full audit route closed in production when no secret or same-origin headers are present", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("INTERNAL_AUDIT_SECRET", "");
 
@@ -162,6 +197,32 @@ describe("POST /api/audit", () => {
     expect(response.status).toBe(404);
     expect(payload).toEqual({ error: "Nicht gefunden." });
     expect(runAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("allows a same-origin browser request in production without an internal secret", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("INTERNAL_AUDIT_SECRET", "");
+    runAuditMock.mockResolvedValue(auditResult);
+
+    const response = await POST(
+      createRequest(
+        { url: "https://example.com" },
+        {
+          origin: "https://audit.example.com",
+          "sec-fetch-site": "same-origin",
+          "x-forwarded-host": "audit.example.com",
+          "x-forwarded-proto": "https",
+        },
+      ),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      url: "https://example.com/",
+      score: 82,
+    });
+    expect(runAuditMock).toHaveBeenCalledWith("https://example.com");
   });
 });
 
